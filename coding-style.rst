@@ -594,7 +594,8 @@ Multi line in `do` block::
 Haddock
 -------
 
-* Exported declarations must have haddock documentation.
+* User visible (exported and not internal) declarations must have
+  haddock documentation.
 * Add examples, annotations like `See also`, `Unsafe`, `Time
   complexity`, `Space complexity`, `since` where applicable.
 
