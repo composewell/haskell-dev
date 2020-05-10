@@ -60,7 +60,13 @@ out the rest, the whole library still keeps compiling.
 Line Length
 -----------
 
-Maximum 80 columns. This is very helpful when seeing diffs side by side.
+Maximum 80 columns. This is very helpful when seeing diffs side by side. 
+
+Below, we have listed styles for single line and multi line cases. The
+single line case is used when the whole construct fits into a single
+line and multi line when it becomes longer than 80 columns and needs to
+be broken into more than one line. In some cases, single line is meant
+for a nested construct rather than for the outer one.
 
 Indentation
 -----------
@@ -122,14 +128,15 @@ Single line::
 
     import Control.Concurrent (killThread, myThreadId, takeMVar, threadDelay)
 
-Multi line::
+Multi line, list style to avoid rearrangement when adding new items::
 
     import Control.Exception
-        (assert, Exception, SomeException, AsyncException, fromException, mask_)
-
-    import Prelude hiding 
-        (map, mapM, mapM_, repeat, foldr, last, take, filter, takeWhile, drop
-        , concatMap, replicate, enumFromTo, concat, reverse, iterate, splitAt
+        ( assert
+        , Exception
+        , SomeException
+        , AsyncException
+        , fromException
+        , mask_
         )
 
 Delineating Sections
@@ -215,6 +222,34 @@ Multi line::
         ( One
         , Two
         , Three
+        )
+
+Nested::
+
+    list =
+        [ Group1
+            [ One
+            , Two
+            , Three
+            ]
+        , Group2
+            [ One
+            , Two
+            , Three
+            ]
+        ]
+
+    tuple =
+        (
+            ( One
+            , Two
+            , Three
+            )
+        ,
+            ( One
+            , Two
+            , Three
+            )
         )
 
 Expressions
@@ -324,7 +359,8 @@ Cascading ::
     else v
 
 Its preferable to not mix single line and multi-line formats, but sometimes you
-can, use your judgement.
+can, especially the first or last line could be in a single line format even if
+the rest are in multiline format.
 
 Variable Naming
 ---------------
@@ -566,11 +602,29 @@ Function Application & Composition
 
 Single line::
 
+    y = f (g (h x))
     y = f $ g $ h x
     y = h x & g & f
     k = f . g . h
 
 Multi line::
+
+    lookup e m =
+        foldrM
+            (\(a, b) xs -> if e == a then return (Just b) else xs)
+            (return Nothing)
+            m
+
+    func =
+        S.drain
+            (encodeLatin1Lax
+                (S.concatUnfold A.read
+                    (S.concatMapWith parallel use
+                        (S.unfold TCP.acceptOnPort 8090
+                        )
+                    )
+                )
+            )
 
     func =
         ( S.drain
@@ -579,6 +633,14 @@ Multi line::
         $ S.concatMapWith parallel use
         $ S.unfold TCP.acceptOnPort 8090
         )
+
+    func =
+        ( S.drain
+        . encodeLatin1Lax
+        . S.concatUnfold A.read
+        . S.concatMapWith parallel use
+        . S.unfold TCP.acceptOnPort
+        ) 8090
 
 Multi line in `do` block::
 
@@ -590,6 +652,27 @@ Multi line in `do` block::
         & encodeLatin1Lax
         & S.drain
         )
+
+Multi line with lambdas, the last application could be a multi line expr::
+
+  return $ Skip $
+        if done
+        then (FromSVarDone sv)
+        else (FromSVarRead sv)
+
+  f x =
+      g $ h $ \y -> do
+          putStrLn "hello "
+          return y
+
+  -- alternatively it can be formatted like a sequence
+  f x =
+      ( g
+      $ h
+      $ \y -> do
+          putStrLn "hello "
+          return y
+      )
 
 Haddock
 -------
@@ -621,3 +704,8 @@ Haddock
   fromAddr# :: Int -> Addr# -> IO (Array Word8)
   fromAddr# n addr# = do
 
+References
+----------
+
+* https://www.joachim-breitner.de/blog/739-Avoid_the_dilemma_of_the_trailing_comma
+* https://stackoverflow.com/questions/10483635/why-do-lots-of-programmers-move-commas-to-the-next-line
