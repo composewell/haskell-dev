@@ -1,3 +1,11 @@
+Getting Started with Haskell
+============================
+
+This guide is primarily oriented towards POSIX users with familiarity
+and access to a shell.  On Windows, ``ghc`` is installed on top of
+``msys`` which provides a POSIX shell. This document with some changes may
+apply to Windows as well but it has not been tested.
+
 Install ``ghc`` and ``cabal``
 -----------------------------
 

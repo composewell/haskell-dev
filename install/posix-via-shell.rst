@@ -1,9 +1,9 @@
-Install `ghc` and `cabal` on Linux using Shell
+Install `ghc` and `cabal` on POSIX using Shell
 ==============================================
 
-The following example is for Debian 10 For other
+The following example is for Debian 10, for other
 distributions replace the tar file (``.tar.xz``) URL below
-with an appropriate ghc tar image URL `from this page
+with an appropriate ``ghc`` tar image URL `from this page
 <https://www.haskell.org/ghc/download_ghc_8_10_1.html>`_.
 
 Install ``ghc``
