@@ -198,7 +198,7 @@ field to pass command line options to ``ghc`` when building our executable::
     ghc-options:         -v
 
 If you are interested in how things work internally, the ``ghc -v``
-option could be especailly useful to see how cabal sets up the package
+option could be especially useful to see how cabal sets up the package
 databases for ``ghc``, i.e. where the compiled dependencies are coming from::
 
   Using binary package database: /Users/harendra/.ghcup/ghc/8.8.3/lib/ghc-8.8.3/package.conf.d/package.cache
@@ -344,7 +344,7 @@ Once you have created a package sandbox you can use the REPL
 (read-eval-print-loop) for fast evaluation of Haskell expressions or modules.
 
 For example, if you want to play with ``streamly``, type the following in your
-sanbox from the previous section::
+sandbox from the previous section::
 
     $ cabal repl
     Build profile: -w ghc-8.8.3 -O1
@@ -400,7 +400,7 @@ the environment file is generated::
 
 Type ``:?`` for help.
 See `the GHCi user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
-comrehensive documentation.
+comprehensive documentation.
 
 Using Packages from github
 --------------------------
