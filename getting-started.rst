@@ -294,7 +294,7 @@ We can see that it compiles and runs but produces the following warning::
       These modules are needed for compilation but not listed in your .cabal file's other-modules: 
           Hello
 
-This will go way if we specify the new module in our ``executable``
+This will go away if we specify the new module in our ``executable``
 stanza in the ``.cabal`` file::
 
   executable hello-world
@@ -427,7 +427,7 @@ location as a github repository. We can specify any ``commit-id`` in the
 
 Now when we build this package, the ``streamly`` package used in the
 dependencies will be fetched from the github repository instead of Hackage.
-We can now use `cabal repl`` as usual and we will be using the version of
+We can now use ``cabal repl`` as usual and we will be using the version of
 `streamly` from github::
 
     $ cabal repl
