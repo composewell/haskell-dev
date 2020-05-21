@@ -34,7 +34,7 @@ Editors
 -------
 
 ``vim``, ``emacs`` and ``vscode`` are popular editors having reasonable
-support for the Haskell toolchain.
+support for the Haskell tool chain.
 
 Hello World!
 ------------
@@ -321,7 +321,7 @@ We need to keep the following in mind when creating modules:
 * Module name (``Hello``) used in the module construct must match its file
   name (``Hello.hs``).
 * For hierarchical modules, if the module name is ``Example.Hello``
-  then the path of the module in the filesystem must be
+  then the path of the module in the file system must be
   ``Example/Hello.hs`` relative to the import root.
 
 Using Library Packages
@@ -415,7 +415,7 @@ the environment file is generated::
 
 Type ``:?`` for help.
 See `the GHCi user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
-comprehensive documentation.
+for comprehensive documentation.
 
 Using Packages from github
 --------------------------
@@ -446,6 +446,23 @@ We can now use ``cabal repl`` as usual and we will be using the version of
 `streamly` from github::
 
     $ cabal repl
+
+Debugging
+---------
+
+Because of strong type system, there is very little debugging required
+in Haskell compared to other languages.  Low level debugging is seldom
+required. The most commonly used high level debugging technique is by
+printing debug messages on console using
+`the Debug.Trace module <hackage.haskell.org/package/base/docs/Debug-Trace.html>`_
+or `putStrLn`.
+
+GHCi has a `built in debugger
+<https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html#the-ghci-debugger>`_ 
+with breakpoint and stepping support, however, this is not used much in
+practice. `gdb` can also be used on Haskell executables, however, this is
+mainly for advanced users because the low level code has little or no
+similarity with the high level code.
 
 Haskell versions
 ----------------
@@ -524,7 +541,7 @@ Q: When compiling directly with ``ghc``, I get this error::
 
 A: package ``fusion-plugin-0.2.1`` is specified as a dependency in the
 project but is not built. You can see this package listed in the
-``.ghc.environment*`` file. "-inplace" means it is a local package and not one
+``.ghc.environment*`` file. ``-inplace`` means it is a local package and not one
 downloaded from Hackage. You can just do ``cabal build fusion-plugin`` to
 make this error go away.
 
@@ -557,4 +574,5 @@ Packages:
 
 * `Haskell package repository (Hackage) <http://hackage.haskell.org/>`_
 * `Haskell base package  <http://hackage.haskell.org/package/base>`_
+* `Haskell Debug.Trace module <hackage.haskell.org/package/base/docs/Debug-Trace.html>`_
 * `Haskell Prelude module <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
