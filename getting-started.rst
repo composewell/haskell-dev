@@ -533,8 +533,8 @@ of packages e.g. ``cabal build --allow-newer=streamly ...``.
 Quick References
 ----------------
 
-* `Haskell compiler (GHC) download page <https://www.haskell.org/ghc/download.html>`_
 * `Haskell compiler installer (ghcup) page <https://www.haskell.org/ghcup/>`_
+* `Haskell compiler (GHC) download page <https://www.haskell.org/ghc/download.html>`_
 * `GHC user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/>`_
 * `Haskell REPL (GHCi) user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
 * `GHC package management guide <ghc-packages.md>`_
