@@ -4,7 +4,8 @@ Getting Started with Haskell
 This guide is primarily oriented towards POSIX users with familiarity
 and access to a shell.  On Windows, ``ghc`` is installed on top of
 ``msys`` which provides a POSIX shell. This document with some changes may
-apply to Windows as well but it has not been tested.
+apply to Windows as well but it has not been tested.  We assume
+``cabal`` version 3.0 or higher and GHC version ``8.2.1`` or higher.
 
 Install ``ghc`` and ``cabal``
 -----------------------------
@@ -52,11 +53,11 @@ function where the program execution starts::
 The first line is optional, any module without an explicit name is
 treated as a ``Main`` module by default.
 
-Program Sandboxes
------------------
+Isolated Compilation
+--------------------
 
 We compiled the above program using ``ghc`` directly. This program
-has a dependency only on the ``base`` package shipped with ``ghc``.
+has a dependency only on the ``base`` package which is shipped with ``ghc``.
 In general, a program may depend on several other packages and each
 dependency may have many versions. When you are compiling program ``A``
 it may require package ``X`` version ``v1``, when you are compiling
@@ -65,20 +66,23 @@ installing packages globally we can only install/activate one version
 of a package, so we can either compile program ``A`` or program ``B``
 but not both together.
 
-To avoid such issues, we recommend that you ALWAYS use a ``cabal`` sandbox
-to build a program (see the following sections), even if it is a single
+To avoid such issues, we recommend that you ALWAYS use a separate
+``cabal`` package directory to build a program, it provides an isolated
+build environment (see the following sections), even if it is a single
 file program. ``cabal`` would install the necessary dependency versions
 specific to the program and invoke ``ghc`` with those dependencies
-versions.
+versions, not interfering with any other program.
 
-When installing packages globally, there are many other ghc package
-management related details that you may need to know to debug issues
-around ``ghc`` not being able to use a package or cabal not being able
-to install a package due to version conflicts.  Therefore, we recommend
-that you NEVER use ``ghc`` to compile directly outside a sandbox. This
-also means that you never need to use ``cabal install`` to install
-library packages outside of a sandbox. You can of course use ``cabal
-install`` to install executables e.g. ``haddock``.
+When installing library packages globally, there are many other ghc
+package management related details that you may need to know to debug
+issues around ``ghc`` not being able to use a package or cabal not being
+able to install a package due to version conflicts.  Therefore, we
+recommend that you NEVER use ``ghc`` to compile directly outside a cabal
+build directory. This also means that you never need to use ``cabal
+install`` to install library packages outside of a cabal directory. You
+can of course use ``cabal install`` to install executables globally e.g.
+``cabal install hlint --install-dir ~/.local/bin`` would install the
+``hlint`` executable in ``~/.local/bin``.
 
 Haskell Packages
 ----------------
@@ -102,12 +106,12 @@ Note: ``cabal`` keeps its housekeeping data in ``$HOME/.cabal``. The
 fetched package index and packages are kept in
 ``$HOME/.cabal/packages/hackage.haskell.org/``.
 
-Creating a Program Sandbox
---------------------------
+Building a Program
+------------------
 
-Let us write the hello world example in a program sandbox. ``cabal`` always
-works on a ``package`` in the sandbox. First create a directory for the
-sandbox::
+Let us write the hello world example in an isolated build environment.
+``cabal`` always works on a ``package``. First create a directory for
+the package::
 
     $ mkdir hello-world
     $ cd hello-world
@@ -188,13 +192,13 @@ We can run that executable directly instead of using ``cabal run``::
     $ /Users/harendra/hello-world/dist-newstyle/build/x86_64-osx/ghc-8.8.3/hello-world-0.1.0.0/x/hello-world/build/hello-world/hello-world
     Hello, Haskell!
 
-Use ``cabal --help`` for general ``cabal`` commands and options.  
-See `this section in cabal user guide
-<https://www.haskell.org/cabal/users-guide/developing-packages.html#package-descriptions>`_
-for details on the fields you can use in the cabal file.
-Refer to `the cabal user guide
-<https://www.haskell.org/cabal/users-guide/>`_ for comprehensive
-documentation.
+Use ``cabal --help`` for general ``cabal`` commands and options. For command
+line options please refer to `this section in cabal user guide <https://www.haskell.org/cabal/users-guide/nix-local-build.html>`_. These are
+new command line options and now used by default in cabal 3.0 or
+higher. Please do not get confused with the older cabal command line
+options which may be documented in some other sections of the user
+guide. For details on the fields you can use in the cabal file `please see this
+section <https://www.haskell.org/cabal/users-guide/developing-packages.html#package-descriptions>`_.
 
 Specifying ``ghc-options``
 --------------------------
@@ -223,7 +227,7 @@ management works see `GHC package management guide <ghc-packages.md>`_.
 Compiling with ``ghc`` directly
 -------------------------------
 
-Now that we have a package sandbox setup. We can even directly use
+Now that we have an isolated package build setup. We can even directly use
 ``ghc`` (version ``8.2.1`` or higher) to compile the files in our package
 instead of using ``cabal build``.
 
@@ -350,11 +354,12 @@ to try out.
 Interactive Haskell REPL (GHCi)
 -------------------------------
 
-Once you have created a package sandbox you can use the REPL
-(read-eval-print-loop) for fast evaluation of Haskell expressions or modules.
+Once you have created an isolated package build environment, you can
+use the REPL (read-eval-print-loop) for fast evaluation of Haskell
+expressions or modules.
 
 For example, if you want to play with ``streamly``, type the following in your
-sandbox from the previous section::
+cabal package directory from the previous section::
 
     $ cabal repl
     Build profile: -w ghc-8.8.3 -O1
@@ -545,6 +550,8 @@ Tool Guides:
 * `Haskell REPL (GHCi) user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
 * `GHC package management guide <ghc-packages.md>`_
 * `cabal user guide <https://www.haskell.org/cabal/users-guide/>`_
+   * `File format and field descriptions <https://www.haskell.org/cabal/users-guide/developing-packages.html>`_
+   * `Command line options <https://www.haskell.org/cabal/users-guide/nix-local-build.html>`_
 
 Packages:
 
