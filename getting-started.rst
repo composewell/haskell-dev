@@ -92,12 +92,12 @@ The canonical Haskell package repository is `Hackage
 libraries as well as useful executable programs.  You can browse the packages
 and their documentation on `Hackage <http://hackage.haskell.org/>`_.
 
-``cabal`` can install these packages so that they can be used by
+``cabal`` can install packages from Hackage so that they can be used by
 ``ghc``. Check out ``cabal`` help::
 
     $ cabal --help
 
-Before you can use them, you need to fetch and update the index of
+Before you can install or use them, you need to fetch and update the index of
 packages from Hackage::
 
     $ cabal update
