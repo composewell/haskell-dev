@@ -533,13 +533,21 @@ of packages e.g. ``cabal build --allow-newer=streamly ...``.
 Quick References
 ----------------
 
+Installing:
+
 * `Haskell compiler installer (ghcup) page <https://www.haskell.org/ghcup/>`_
 * `Haskell compiler (GHC) download page <https://www.haskell.org/ghc/download.html>`_
+* `Haskel build tool (cabal) download page <https://www.haskell.org/cabal/download.html>`_
+
+Tool Guides:
+
 * `GHC user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/>`_
 * `Haskell REPL (GHCi) user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
 * `GHC package management guide <ghc-packages.md>`_
-* `Haskel build tool (cabal) download page <https://www.haskell.org/cabal/download.html>`_
 * `cabal user guide <https://www.haskell.org/cabal/users-guide/>`_
+
+Packages:
+
 * `Haskell package repository (Hackage) <http://hackage.haskell.org/>`_
 * `Haskell base package  <http://hackage.haskell.org/package/base>`_
 * `Haskell Prelude module <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
