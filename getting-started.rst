@@ -417,7 +417,7 @@ Using Packages from github
 
 Let's say you want to play with the latest/unreleased version of `streamly from
 github <https://github.com/composewell/streamly>`_. You will need a
-`cabal.project` file to do that. This file describes project level
+``cabal.project`` file to do that. This file describes project level
 meta information, for example, all your packages (you can
 have multiple packages under the same directory tree, each one as a
 subdirectory with a ``.cabal`` file), build options for
@@ -442,20 +442,31 @@ We can now use `cabal repl`` as usual and we will be using the version of
 
     $ cabal repl
 
+Haskell versions
+----------------
+
+GHC is the de-facto Haskell compiler, Haskell version practically means
+GHC version.  New versions of GHC are released quite often.  Compared
+to other languages migrating to different versions of GHC is pretty
+easy. Most packages work for many versions of GHC. However, you can
+expect some packages not yet building for the latest version of GHC. Usually it
+can be solved by just using the ``--allow-newer`` option in ``cabal``. The
+recommended version range is usually the last three versions.
+
 Selecting the ``ghc`` version to use
-------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default ``cabal`` picks up the ``ghc`` executable in the shell ``PATH``.
+By default ``cabal`` picks up the ``ghc`` executable available in the
+shell ``PATH``.
 
-Instead of using ``PATH`` to use a compiler implicitly you can
-also use the cabal option to use a specific ``ghc`` version e.g. ``cabal
-build -w ghc-8.8``.
+You can also use the cabal option to use a specific ``ghc`` version e.g.
+``cabal build -w ghc-8.8``.
 
 You can also specify the ``ghc`` to be used for compilation in the
-``cabal.project`` file.
+``cabal.project`` file using the ``with-compiler`` field.
 
 Selecting the ``ghc`` version with ``ghcup``
---------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``ghcup`` provides multiple versions of ``ghc`` and a currently
 activated version. ``ghcup set 8.8.3`` activates the ghc version
@@ -473,6 +484,28 @@ These are symlinks to the binaries in ``$HOME/.ghcup/ghc``. You have the
 symlinks available in your shell ``PATH``.  When you use ``ghcup set``
 to activate a particular ghc version then it just modifies the ``ghc``
 symlink to point to that version.
+
+Build times and Space Utilization
+---------------------------------
+
+When we install a package or use a dependency in a program, ``cabal``
+fetches the source packages from Hackage and compiles them.  Haskell/GHC
+compilation speed is slower than imperative languages, say, C
+compilers. A lot of it is because of many expensive optimizations
+performed by GHC. In the first few package installs or builds a lot of
+dependencies may be fetched and built, therefore, initial builds may
+take some time. Please be patient.
+
+However, after the first compilation, ``cabal`` caches and reuses the
+previously compiled dependencies across all builds, provided that we
+are using the same version of GHC and default compilation options for
+dependencies. Whenever you change a compiler version you may see longer
+build times due to rebuilding the dependencies for that version. For
+faster build speeds avoid changing the compiler version often.
+
+``cabal`` caches the previously built packages in ``$HOME/.cabal`` directory.
+The cache size may grow as more dependencies are fetched and built. Commonly
+5-10 GB space allocation is reasonable for the cache.
 
 Frequently Asked Questions
 --------------------------
@@ -496,3 +529,17 @@ dependency versions cannot be satisfied.
 A: Try ``cabal build --allow-newer ...`` or ``cabal install
 --allow-newer ...``. You can also allow newer version of a specific set
 of packages e.g. ``cabal build --allow-newer=streamly ...``.
+
+Quick References
+----------------
+
+* `Haskell compiler (GHC) download page <https://www.haskell.org/ghc/download.html>`_
+* `Haskell compiler installer (ghcup) page <https://www.haskell.org/ghcup/>`_
+* `GHC user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/>`_
+* `Haskell REPL (GHCi) user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
+* `GHC package management guide <ghc-packages.md>`_
+* `Haskel build tool (cabal) download page <https://www.haskell.org/cabal/download.html>`_
+* `cabal user guide <https://www.haskell.org/cabal/users-guide/>`_
+* `Haskell package repository (Hackage) <http://hackage.haskell.org/>`_
+* `Haskell base package  <http://hackage.haskell.org/package/base>`_
+* `Haskell Prelude module <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
