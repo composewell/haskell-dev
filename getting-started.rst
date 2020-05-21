@@ -52,24 +52,33 @@ function where the program execution starts::
 The first line is optional, any module without an explicit name is
 treated as a ``Main`` module by default.
 
-Package Sandboxes
+Program Sandboxes
 -----------------
 
 We compiled the above program using ``ghc`` directly. This program
-used only the ``base`` package shipped with ``ghc``, it did not use
-any external package dependencies. However, in general, a program
-requires several dependencies and the versions of those dependencies
-need to be selected dynamically for each program to satisfy all version
-constraints. The dependency requirements of one program may conflict
-with the requirements of other program.
+has a dependency only on the ``base`` package shipped with ``ghc``.
+In general, a program may depend on several other packages and each
+dependency may have many versions. When you are compiling program ``A``
+it may require package ``X`` version ``v1``, when you are compiling
+program ``B`` it may require package ``X`` version ``v2``. When
+installing packages globally we can only install/activate one version
+of a package, so we can either compile program ``A`` or program ``B``
+but not both together.
 
-Therefore, this is not a recommended way to compile programs because
-it requires installing a single global consistent snapshot of package
-versions to be used by ``ghc`` globally.
+To avoid such issues, we recommend that you ALWAYS use a ``cabal`` sandbox
+to build a program (see the following sections), even if it is a single
+file program. ``cabal`` would install the necessary dependency versions
+specific to the program and invoke ``ghc`` with those dependencies
+versions.
 
-The recommended way to build a program is by creating a package sandbox
-using ``cabal`` and ``cabal`` would invoke ``ghc`` with the right package
-versions as requested in the package specification.
+When installing packages globally, there are many other ghc package
+management related details that you may need to know to debug issues
+around ``ghc`` not being able to use a package or cabal not being able
+to install a package due to version conflicts.  Therefore, we recommend
+that you NEVER use ``ghc`` to compile directly outside a sandbox. This
+also means that you never need to use ``cabal install`` to install
+library packages outside of a sandbox. You can of course use ``cabal
+install`` to install executables e.g. ``haddock``.
 
 Haskell Packages
 ----------------
@@ -93,11 +102,12 @@ Note: ``cabal`` keeps its housekeeping data in ``$HOME/.cabal``. The
 fetched package index and packages are kept in
 ``$HOME/.cabal/packages/hackage.haskell.org/``.
 
-Creating a Package
-------------------
+Creating a Program Sandbox
+--------------------------
 
-Let us write the hello world example in a package sandbox. First create a
-directory where our package would live::
+Let us write the hello world example in a program sandbox. ``cabal`` always
+works on a ``package`` in the sandbox. First create a directory for the
+sandbox::
 
     $ mkdir hello-world
     $ cd hello-world
@@ -214,12 +224,11 @@ Compiling with ``ghc`` directly
 -------------------------------
 
 Now that we have a package sandbox setup. We can even directly use
-``ghc`` to compile the files in our package instead of using ``cabal
-build``. ``ghc`` would use the same package dependencies as setup
-in our ``.cabal`` file. 
+``ghc`` (version ``8.2.1`` or higher) to compile the files in our package
+instead of using ``cabal build``.
 
-To enable that we first need to produce an ``environment`` file for
-``ghc`` to use::
+For ``ghc`` to use the same package dependencies as ``cabal`` we need to
+first create an ``environment`` file for ``ghc`` to use::
 
   cabal build --write-ghc-environment-files=always
 
@@ -242,12 +251,13 @@ Now we can use ``ghc`` directly to compile any module in this package::
 
 From version ``8.2.1`` onwards ``ghc`` always looks for an environment
 file in the current directory or in any of the parent directories
-and loads it if found. The environment file contains a list package
-databases and packages to use. ``cabal build`` sets up the environment
-file to use the package dependency versions that it has selected for the
-current package.
+and loads it if found. The environment file contains a list of package
+databases and packages to use. 
 
-Do not forget to do a ``cabal build`` before using ``ghc`` to compile directly.
+``cabal build`` sets up the environment file to use the package
+dependency versions that it has selected for the current package.  Do
+not forget to do a ``cabal build`` before using ``ghc`` to compile
+directly.
 
 GHC Documentation
 -----------------
@@ -431,3 +441,58 @@ We can now use `cabal repl`` as usual and we will be using the version of
 `streamly` from github::
 
     $ cabal repl
+
+Selecting the ``ghc`` version to use
+------------------------------------
+
+By default ``cabal`` picks up the ``ghc`` executable in the shell ``PATH``.
+
+Instead of using ``PATH`` to use a compiler implicitly you can
+also use the cabal option to use a specific ``ghc`` version e.g. ``cabal
+build -w ghc-8.8``.
+
+You can also specify the ``ghc`` to be used for compilation in the
+``cabal.project`` file.
+
+Selecting the ``ghc`` version with ``ghcup``
+--------------------------------------------
+
+``ghcup`` provides multiple versions of ``ghc`` and a currently
+activated version. ``ghcup set 8.8.3`` activates the ghc version
+``8.8.3``.  Note that the activated version of ``ghc`` changes in all
+your shells and not just in the current shell.
+
+``ghcup`` provides ``ghc`` and other version sensitive auxiliary
+``executables like ghci``, ``haddock`` etc. in ``$HOME/.ghcup/bin``.
+
+* ``$HOME/.ghcup/bin/ghc`` => currently activated version of ghc
+* ``$HOME/.ghcup/bin/ghc-8.8`` => latest ghc-8.8.x
+* ``$HOME/.ghcup/bin/ghc-8.8.3`` => ghc-8.8.3
+
+These are symlinks to the binaries in ``$HOME/.ghcup/ghc``. You have the
+symlinks available in your shell ``PATH``.  When you use ``ghcup set``
+to activate a particular ghc version then it just modifies the ``ghc``
+symlink to point to that version.
+
+Frequently Asked Questions
+--------------------------
+
+Q: When compiling directly with ``ghc``, I get this error::
+
+   $ ghc -O2 zz.hs
+   Loaded package environment from /projects/streamly/.ghc.environment.x86_64-darwin-8.8.3
+   <command line>: cannot satisfy -package-id fusion-plugin-0.2.1-inplace
+       (use -v for more information)
+
+A: package ``fusion-plugin-0.2.1`` is specified as a dependency in the
+project but is not built. You can see this package listed in the
+``.ghc.environment*`` file. "-inplace" means it is a local package and not one
+downloaded from Hackage. You can just do ``cabal build fusion-plugin`` to
+make this error go away.
+
+Q: ``cabal`` is not able to build or install a package because the package
+dependency versions cannot be satisfied.
+
+A: Try ``cabal build --allow-newer ...`` or ``cabal install
+--allow-newer ...``. You can also allow newer version of a specific set
+of packages e.g. ``cabal build --allow-newer=streamly ...``.
