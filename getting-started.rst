@@ -7,6 +7,11 @@ and access to a shell.  On Windows, ``ghc`` is installed on top of
 apply to Windows as well but it has not been tested.  We assume
 ``cabal`` version 3.0 or higher and GHC version ``8.2.1`` or higher.
 
+If you follow this guide and run into a problem which is not addressed
+by this guide then it is a bug in the guide, `please raise an
+issue here <https://github.com/composewell/haskell-dev/issues/new>`_. 
+For diagnostics please see the FAQ section in the end.
+
 Install ``ghc`` and ``cabal``
 -----------------------------
 
@@ -110,13 +115,17 @@ Building a Program
 ------------------
 
 Let us write the hello world example in an isolated build environment.
-``cabal`` always works on a ``package``. First create a directory for
-the package::
+``cabal`` always builds packages. First create a directory for our
+``hello-world`` package. This directory will contain an independent and
+isolated build environment for our package::
 
     $ mkdir hello-world
     $ cd hello-world
 
-Now create a package description file (``<package>.cabal``)::
+Now create a package description file (``<package>.cabal``). The
+``.cabal`` file contains important information on how to build the
+package, including dependencies of the package, compiler options,
+executables, benchmarks, test suites to build::
 
     $ cabal init
 
@@ -130,7 +139,7 @@ directory. The contents of the file look like this::
     main-is:             Main.hs
     build-depends:       base >=4.13 && <4.14
 
-It says, this directory contains a package called ``hello-world``
+It says, this directory contains a package named ``hello-world``
 whose version number is ``0.1.0.0``. The package would build an
 executable called ``hello-world`` whose main module lives in the
 file ``Main.hs``.  The package depends on the ``base`` package.
@@ -141,13 +150,13 @@ programs. The function ``putStrLn`` in our program comes from the
 `Prelude <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
 module.
 
-The default package name ``hello-world`` comes from the current
-directory name.  You can use a different name using ``cabal init
--p``. Or you can just edit the ``.cabal`` file and change the package
-name field, you have to remember that the ``.cabal`` file name must
-always be the same as the package name so if you change the package name
-you would have to rename it as well.  You can use ``cabal init --help``
-for more ``init`` options to use.
+The default package name ``hello-world`` is automatically derived by
+``cabal init`` from the current directory name.  You can use a different
+name using ``cabal init -p``. Or you can just edit the ``.cabal``
+file and change the package name field, you have to remember that the
+``.cabal`` file name must always be the same as the package name so if
+you change the package name you would have to rename it as well.  You
+can use ``cabal init --help`` to know about more ``init`` options to use.
 
 We can now write our program in the file ``Main.hs``. In fact, ``cabal
 init`` itself creates one for us, we can edit it if we want::
@@ -158,15 +167,15 @@ init`` itself creates one for us, we can edit it if we want::
   main :: IO ()
   main = putStrLn "Hello, Haskell!"
 
-Note that ``Main.hs`` is not a special name, you can change it to be
-whatever you want as long as you use the same name in the ``main-is``
+Note that ``Main.hs`` is not a special name, you can change it to
+whatever name you want as long as you use the same name in the ``main-is``
 field of the ``executable`` section in the ``.cabal`` file
 
 Let us now build and run our program::
 
   $ cabal run
 
-It builds the executable ``hello-world`` from the module ``Main.hs``
+This command builds the executable ``hello-world`` from the module ``Main.hs``
 as specified in the ``.cabal`` file, and then runs the executable. The
 executable and all other intermediate build artifacts are created in the
 ``dist-newstyle`` directory.
@@ -187,18 +196,23 @@ information including how it invokes ``ghc``::
     ...
     Linking /Users/harendra/hello-world/dist-newstyle/build/x86_64-osx/ghc-8.8.3/hello-world-0.1.0.0/x/hello-world/build/hello-world/hello-world ...
 
-We can run that executable directly instead of using ``cabal run``::
+We can run that executable directly too instead of using ``cabal run``::
 
     $ /Users/harendra/hello-world/dist-newstyle/build/x86_64-osx/ghc-8.8.3/hello-world-0.1.0.0/x/hello-world/build/hello-world/hello-world
     Hello, Haskell!
 
-Use ``cabal --help`` for general ``cabal`` commands and options. For command
-line options please refer to `this section in cabal user guide <https://www.haskell.org/cabal/users-guide/nix-local-build.html>`_. These are
-new command line options and now used by default in cabal 3.0 or
-higher. Please do not get confused with the older cabal command line
-options which may be documented in some other sections of the user
-guide. For details on the fields you can use in the cabal file `please see this
+Use ``cabal --help`` for general ``cabal`` commands and options. For
+more details on command line options please refer to `this section in
+cabal user guide <https://www.haskell.org/cabal/users-guide/nix-local-build.html>`_.
+To know more about the fields you can use in the cabal file `please see this
 section <https://www.haskell.org/cabal/users-guide/developing-packages.html#package-descriptions>`_.
+
+Note: Command line options and their behavior has changed in recent versions
+of ``cabal`` and the newer options (with a ``v2-`` prefix) are now used
+by default in cabal 3.0 or higher (i.e. ``cabal build`` is the same as
+``cabal v2-build``). Please do not get confused with the older cabal
+command line options (with a ``v1-`` prefix) which may be mentioned in
+some sections of the user guide. 
 
 Specifying ``ghc-options``
 --------------------------
@@ -231,8 +245,9 @@ Now that we have an isolated package build setup. We can even directly use
 ``ghc`` (version ``8.2.1`` or higher) to compile the files in our package
 instead of using ``cabal build``.
 
-For ``ghc`` to use the same package dependencies as ``cabal`` we need to
-first create an ``environment`` file for ``ghc`` to use::
+For ``ghc`` to use the same package dependencies as ``cabal`` invokes
+it with we need to first create an ``environment`` file for ``ghc`` to
+use::
 
   cabal build --write-ghc-environment-files=always
 
@@ -253,15 +268,29 @@ Now we can use ``ghc`` directly to compile any module in this package::
   $ ./Main
   Hello, Haskell!
 
+How It works?
+~~~~~~~~~~~~~
+
 From version ``8.2.1`` onwards ``ghc`` always looks for an environment
 file in the current directory or in any of the parent directories
 and loads it if found. The environment file contains a list of package
-databases and packages to use. 
+databases and packages for use by ``ghc``.
 
 ``cabal build`` sets up the environment file to use the package
-dependency versions that it has selected for the current package.  Do
-not forget to do a ``cabal build`` before using ``ghc`` to compile
+dependency versions that it has selected for the current package.  
+
+Note: Do not forget to do a ``cabal build`` before compiling with ``ghc``
 directly.
+
+Using extra dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to use a package that is not in the ``build-depends`` section of
+the cabal file then you need to first install it from within the project
+directory and then explicitly ask ``ghc`` to use it::
+
+    $ cabal install unordered-containers
+    $ ghc -package unordered-containers Main.hs
 
 GHC Documentation
 -----------------
@@ -469,11 +498,13 @@ Haskell versions
 
 GHC is the de-facto Haskell compiler, Haskell version practically means
 GHC version.  New versions of GHC are released quite often.  Compared
-to other languages migrating to different versions of GHC is pretty
+to other languages migrating to newer versions of GHC is pretty
 easy. Most packages work for many versions of GHC. However, you can
-expect some packages not yet building for the latest version of GHC. Usually it
-can be solved by just using the ``--allow-newer`` option in ``cabal``. The
-recommended version range is usually the last three versions.
+expect some packages not yet building for the latest version of GHC and some
+not supporting versions that are too old. In many cases packages not yet
+supprting the newer versions can be built for newer versions by just
+using the ``--allow-newer`` option in ``cabal``. The recommended version
+range is usually the last three versions.
 
 Selecting the ``ghc`` version to use
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -544,6 +575,37 @@ project but is not built. You can see this package listed in the
 ``.ghc.environment*`` file. ``-inplace`` means it is a local package and not one
 downloaded from Hackage. You can just do ``cabal build fusion-plugin`` to
 make this error go away.
+
+Q: When compiling with ``ghc`` directly I get a message like this::
+
+  examples/WordClassifier.hs:28:1: error:
+      Could not find module ‘Data.None’
+      Use -v (or `:set -v` in ghci) to see a list of the files searched for.
+     |
+  28 | import Data.None
+     | ^^^^^^^^^^^^^^^^
+
+A: You have not included the package providing ``Data.None`` in your
+``build-depends`` or you have not executed ``cabal build`` after doing
+so. You can use ``cabal install`` (from within the project directory) to
+install the package manually.
+
+Q: When compiling with ``ghc`` I get a message like this::
+
+  examples/WordClassifier.hs:13:1: error:
+  Could not load module ‘Data.HashMap.Strict’
+  It is a member of the hidden package ‘unordered-containers-0.2.10.0’.
+  You can run ‘:set -package unordered-containers’ to expose it.
+  (Note: this unloads all the modules in the current scope.)
+  Use -v (or `:set -v` in ghci) to see a list of the files searched for.
+     |
+  13 | import qualified Data.HashMap.Strict as Map
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A: The package providing the above module is known to cabal,
+but it is not in your ``build-depends`` or environment file. Use
+``ghc -package unordered-containers`` to make it available to ``ghc``
+manually.
 
 Q: ``cabal`` is not able to build or install a package because the package
 dependency versions cannot be satisfied.
