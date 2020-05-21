@@ -347,8 +347,8 @@ See `the README for streamly on Hackage
 <http://hackage.haskell.org/package/streamly#readme>`_ for more code snippets
 to try out.
 
-Using the REPL
---------------
+Interactive Haskell REPL (GHCi)
+-------------------------------
 
 Once you have created a package sandbox you can use the REPL
 (read-eval-print-loop) for fast evaluation of Haskell expressions or modules.
