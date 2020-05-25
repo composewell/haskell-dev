@@ -1,16 +1,17 @@
 Getting Started with Haskell
 ============================
 
-This guide is primarily oriented towards POSIX users with familiarity
-and access to a shell.  On Windows, ``ghc`` is installed on top of
-``msys`` which provides a POSIX shell. This document with some changes may
-apply to Windows as well but it has not been tested.  We assume
-``cabal`` version 3.0 or higher and GHC version ``8.2.1`` or higher.
+The purpose of this guide is to document best practices for new users to
+get started on using the Haskell compiler ``ghc`` and Haskell build tool
+``cabal``. If you follow this guide and run into a problem `please raise
+an issue here <https://github.com/composewell/haskell-dev/issues/new>`_.
+For diagnostics, please see the FAQ section in the end.
 
-If you follow this guide and run into a problem which is not addressed
-by this guide then it is a bug in the guide, `please raise an
-issue here <https://github.com/composewell/haskell-dev/issues/new>`_. 
-For diagnostics please see the FAQ section in the end.
+This guide is primarily oriented towards POSIX shell users.  On
+Windows, ``ghc`` is installed on top of ``msys`` which provides a POSIX
+shell. This document, with some changes, may apply to Windows as well
+but it has not been tested.  We assume ``cabal`` version 3.0 or higher
+and GHC version ``8.2.1`` or higher.
 
 Install ``ghc`` and ``cabal``
 -----------------------------
