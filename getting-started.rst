@@ -609,7 +609,13 @@ but it is not in your ``build-depends`` or environment file. Use
 manually.
 
 Q: ``cabal`` is not able to build or install a package because the package
-dependency versions cannot be satisfied.
+dependency versions cannot be satisfied::
+
+  Resolving dependencies...
+  cabal: Could not resolve dependencies:
+  [__0] trying: slides-0.1.0.0 (user goal)
+  [__1] trying: base-4.13.0.0/installed-4.13.0.0 (dependency of slides)
+  ...
 
 A: Try ``cabal build --allow-newer ...`` or ``cabal install
 --allow-newer ...``. You can also allow newer version of a specific set
