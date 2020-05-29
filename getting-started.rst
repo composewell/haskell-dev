@@ -477,6 +477,33 @@ We can now use ``cabal repl`` as usual and we will be using the version of
 
     $ cabal repl
 
+Freezing Dependency Versions
+----------------------------
+
+``cabal`` picks the dependency versions based on the constraints
+specified in the cabal file. When newer versions of dependencies become
+available or if the compiler version changes (which changes the ``base``
+package version), cabal's dependency solver can pick a different set of
+dependency versions satisfying the constraints. However, if you want to
+freeze the versions picked by ``cabal`` you can use the ``cabal freeze``
+command. It generates a ``cabal.project.freeze`` file consisting of the
+exact versions and build flags of the packages chosen by cabal. If that
+file exists ``cabal`` always picks up exactly those versions.
+
+This command can also be useful if you want to know all the dependencies of the
+project and their versions.
+
+Using Stackage Snapshots
+------------------------
+
+`Stackage <https://www.stackage.org/>`_ releases a consistent set
+of versions of Haskell packages that are known to build together,
+known as stackage ``lts`` Haskell snapshots. You can use the ``lts``
+snapshots with cabal using the ``cabal.project.freeze`` file provided by
+stackage::
+
+    curl https://www.stackage.org/lts-15.14/cabal.config > cabal.project.freeze
+
 Debugging
 ---------
 
