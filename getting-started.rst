@@ -5,7 +5,7 @@ The purpose of this guide is to document best practices for new users to
 get started on using the Haskell compiler ``ghc`` and Haskell build tool
 ``cabal``. If you follow this guide and run into a problem `please raise
 an issue here <https://github.com/composewell/haskell-dev/issues/new>`_.
-For diagnostics, please see the FAQ section in the end.
+For diagnostics, please see the FAQ_ section in the end.
 
 This guide is primarily oriented towards POSIX shell users.  On
 Windows, ``ghc`` is installed on top of ``msys`` which provides a POSIX
@@ -66,18 +66,20 @@ We compiled the above program using ``ghc`` directly. This program
 has a dependency only on the ``base`` package which is shipped with ``ghc``.
 In general, a program may depend on several other packages and each
 dependency may have many versions. When you are compiling program ``A``
-it may require package ``X`` version ``v1``, when you are compiling
-program ``B`` it may require package ``X`` version ``v2``. When
-installing packages globally we can only install/activate one version
-of a package, so we can either compile program ``A`` or program ``B``
-but not both together.
+it may require package ``X`` version ``v1``, on the other hand when
+you are compiling program ``B`` it may require package ``X`` version
+``v2``. If we install packages globally then we can only install/activate
+one version of any given package. This means we can either compile
+program ``A`` or program ``B`` but not both together.
 
-To avoid such issues, we recommend that you ALWAYS use a separate
-``cabal`` package directory to build a program, it provides an isolated
-build environment (see the following sections), even if it is a single
-file program. ``cabal`` would install the necessary dependency versions
-specific to the program and invoke ``ghc`` with those dependencies
-versions, not interfering with any other program.
+To avoid such issues, we recommend that you ALWAYS use a dedicated
+package directory to build a program, even if it is a single file
+program. Using a dedicated directory provides an isolated build
+environment (see details in the following sections). ``cabal`` would
+install the necessary dependency versions specific to the program and
+invoke ``ghc`` with those dependencies versions. This way each program
+gets its own build environment and they do not interfere with each
+other.
 
 When installing library packages globally, there are many other ghc
 package management related details that you may need to know to debug
@@ -94,39 +96,40 @@ Haskell Packages
 ----------------
 
 The canonical Haskell package repository is `Hackage
-<http://hackage.haskell.org/>`_ hosting thousands of packages consisting of
+<http://hackage.haskell.org/>`_, hosting thousands of packages consisting of
 libraries as well as useful executable programs.  You can browse the packages
 and their documentation on `Hackage <http://hackage.haskell.org/>`_.
 
 ``cabal`` can install packages from Hackage so that they can be used by
-``ghc``. Check out ``cabal`` help::
+``ghc``. To get familiar with ``cabal``'s commands and options use::
 
     $ cabal --help
 
-Before you can install or use them, you need to fetch and update the index of
-packages from Hackage::
+Before you can install or use the packages, you need to fetch and update
+the list of packages from Hackage::
 
     $ cabal update
 
-Note: ``cabal`` keeps its housekeeping data in ``$HOME/.cabal``. The
+Side Note: ``cabal`` keeps its housekeeping data in ``$HOME/.cabal``. The
 fetched package index and packages are kept in
 ``$HOME/.cabal/packages/hackage.haskell.org/``.
 
 Building a Program
 ------------------
 
-Let us write the hello world example in an isolated build environment.
-``cabal`` always builds packages. First create a directory for our
-``hello-world`` package. This directory will contain an independent and
-isolated build environment for our package::
+Let us write the hello world example in an isolated build
+environment. We will create a cabal ``package`` for our program to
+do so.  First create a directory for our ``hello-world`` package. This
+directory will contain an independent and isolated build environment for
+our package::
 
     $ mkdir hello-world
     $ cd hello-world
 
-Now create a package description file (``<package>.cabal``). The
-``.cabal`` file contains important information on how to build the
-package, including dependencies of the package, compiler options,
-executables, benchmarks, test suites to build::
+Now create a package description file (``<package name>.cabal``). This
+file contains important information on how to build the package,
+including dependencies of the package, compiler options, executables,
+benchmarks, test suites to build::
 
     $ cabal init
 
@@ -141,7 +144,7 @@ directory. The contents of the file look like this::
     build-depends:       base >=4.13 && <4.14
 
 It says, this directory contains a package named ``hello-world``
-whose version number is ``0.1.0.0``. The package would build an
+whose version number is ``0.1.0.0``. The package contains an
 executable called ``hello-world`` whose main module lives in the
 file ``Main.hs``.  The package depends on the ``base`` package.
 `base <http://hackage.haskell.org/package/base>`_ is a fundamental
@@ -185,7 +188,7 @@ We can clean the build artifacts using::
 
   $ cabal clean
 
-If we want to just build and not run::
+If we want to just build the package and not run it::
 
   $ cabal build
 
@@ -477,6 +480,75 @@ We can now use ``cabal repl`` as usual and we will be using the version of
 
     $ cabal repl
 
+Cabal configuration
+-------------------
+
+The behavior of ``cabal`` is determined by the following configuration,
+in the increasing priority order:
+
+* $HOME/.cabal/config (the user-wide global configuration)
+* cabal.project (the project configuration)
+* cabal.project.freeze (the output of cabal freeze)
+* cabal.project.local (the output of cabal configure)
+* command line flags
+* Environment variables
+
+`See cabal.project section in cabal user guide <https://www.haskell.org/cabal/users-guide/nix-local-build.html#configuring-builds-with-cabal-project>`_.
+
+Customizing how dependencies are built
+--------------------------------------
+
+Options passed to the build command, are ``global`` which means they
+apply to all your source packages, their dependencies, and dependencies
+of dependencies. For example::
+
+    $ cabal build --ghc-options=-Werror
+
+We can use the ``configure`` command to persistently save the settings in a
+``cabal.project.local`` file::
+
+  $ cabal configure --ghc-options=-Werror 
+  $ cat cabal.project.local
+
+  package *
+    ghc-options: -Werror
+
+  program-options
+    ghc-options: -Werror
+
+If we want a setting to be applied only to a certain package or dependency::
+
+  $ cat cabal.project
+  package streamly
+    ghc-options: -Werror
+
+Non-Haskell Dependencies
+------------------------
+
+When a package depends on a C library we need to tell cabal where the
+library and its header files are::
+
+  $ cat cabal.project.local
+  package text-icu
+    extra-include-dirs: /opt/local/include
+    extra-lib-dirs: /opt/local/lib
+
+NOTE: It seems this works only in cabal.project.local and not in cabal.project,
+see https://github.com/haskell/cabal/issues/2997 .
+
+We can also use the command line options, however, they do not apply to
+dependencies, they only apply to local packages::
+
+    $ cabal build --extra-include-dirs=/opt/local/include --extra-lib-dirs=/opt/local/lib 
+    
+We can also use environment variables to achieve the same thing.
+This could be useful when you are not in a project context e.g. when
+installing a package using ``cabal install`` or if some other program is
+invoking cabal from inside (e.g. ghc build)::
+
+  $ export C_INCLUDE_PATH=/opt/local/include
+  $ export LIBRARY_PATH=/opt/local/lib:/usr/lib:/lib
+
 Freezing Dependency Versions
 ----------------------------
 
@@ -502,7 +574,7 @@ known as stackage ``lts`` Haskell snapshots. You can use the ``lts``
 snapshots with cabal using the ``cabal.project.freeze`` file provided by
 stackage::
 
-    curl https://www.stackage.org/lts-15.14/cabal.config > cabal.project.freeze
+    curl https://www.stackage.org/lts/cabal.config > cabal.project.freeze
 
 Debugging
 ---------
@@ -551,7 +623,9 @@ Selecting the ``ghc`` version with ``ghcup``
 
 ``ghcup`` provides multiple versions of ``ghc`` and a currently
 activated version. ``ghcup set 8.8.3`` activates the ghc version
-``8.8.3``.  Note that the activated version of ``ghc`` changes in all
+``8.8.3``.
+
+IMPORTANT NOTE: The activated version of ``ghc`` changes in all
 your shells and not just in the current shell.
 
 ``ghcup`` provides ``ghc`` and other version sensitive auxiliary
@@ -588,23 +662,133 @@ faster build speeds avoid changing the compiler version often.
 The cache size may grow as more dependencies are fetched and built. Commonly
 5-10 GB space allocation is reasonable for the cache.
 
-Frequently Asked Questions
---------------------------
+.. _FAQ:
 
-Q: When compiling directly with ``ghc``, I get this error::
+Frequently Asked Questions (FAQ)
+--------------------------------
+
+When building your project
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Q: I am getting a ``Could not find module ...`` error::
+
+  Main.hs:3:1: error:
+  Could not find module ‘Data.Foo’
+  Perhaps you meant
+    Data.Bool (from base-4.13.0.0)
+    Data.Fix (needs flag -package-key data-fix-0.2.1)
+    Data.Pool (needs flag -package-key resource-pool-0.2.3.2)
+  Use -v (or `:set -v` in ghci) to see a list of the files searched for.
+    |
+  3 | import Data.Foo
+    | ^^^^^^^^^^^^^^^
+
+A: You have used the module ``Data.Foo`` in your program but you have not
+specified the package providing this module in the ``build-depends`` field of
+your executable or library section of your cabal file. Add it by editing the
+``.cabal`` file. Assuming the module ``Data.Foo`` is in package ``foo``::
+
+  executable hello-world
+    main-is:             Main.hs
+    build-depends:       base >=4.13 && <4.14, foo
+
+If you do not know which package the module ``Data.Foo`` belongs to, you
+can search the module name on `hoogle <https://hoogle.haskell.org/>`_ or use
+the `documentation by module on stackage
+<https://www.stackage.org/lts/docs>`_
+
+Q: I am getting a ``Could not resolve dependencies`` along with
+``constraint from non-upgradeable package requires installed instance``
+error::
+
+  Resolving dependencies...
+  cabal: Could not resolve dependencies:
+  [__0] trying: clock-project-0.1.0.0 (user goal)
+  [__1] next goal: base (dependency of clock-project)
+  [__1] rejecting: base-4.13.0.0/installed-4.13.0.0 (conflict: clock-project =>
+  base>=4.14 && <4.15)
+  [__1] rejecting: base-4.14.0.0, base-4.13.0.0, base-4.12.0.0, base-4.11.1.0,
+  base-4.11.0.0, base-4.10.1.0, base-4.10.0.0, base-4.9.1.0, base-4.9.0.0,
+  base-4.8.2.0, base-4.8.1.0, base-4.8.0.0, base-4.7.0.2, base-4.7.0.1,
+  base-4.7.0.0, base-4.6.0.1, base-4.6.0.0, base-4.5.1.0, base-4.5.0.0,
+  base-4.4.1.0, base-4.4.0.0, base-4.3.1.0, base-4.3.0.0, base-4.2.0.2,
+  base-4.2.0.1, base-4.2.0.0, base-4.1.0.0, base-4.0.0.0, base-3.0.3.2,
+  base-3.0.3.1 (constraint from non-upgradeable package requires installed
+  instance)
+  [__1] fail (backjumping, conflict set: base, clock-project)
+  After searching the rest of the dependency tree exhaustively, these were the
+  goals I've had most trouble fulfilling: base, clock-project
+
+A. The key part is ``conflict: clock-project => base>=4.14 && <4.15``
+and ``constraint from non-upgradeable package requires installed
+instance``. The ``base`` package version constraints in your cabal file are in
+conflict with the ``base`` version of the current compiler you are using. Each
+compiler version is tied to a particular ``base`` package version which cannot
+be upgraded. You need to either change the constraints in your cabal file to
+allow the ``base`` package version corresponding to the ``ghc`` version you are
+using or change your ``ghc`` version.
+
+You can see ``base`` versions corresponding to ``ghc`` versions `here
+<https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history>`_
+. If you are using ``ghcup``, ``ghcup list`` shows ``ghc`` and
+corresponding ``base`` versions.
+
+Q: I am getting a ``Could not resolve dependencies`` error but I am not using
+the packages mentioned in the error message in my project::
+
+  Resolving dependencies...
+  cabal: Could not resolve dependencies:
+  [__0] trying: slides-0.1.0.0 (user goal)
+  [__1] trying: base-4.13.0.0/installed-4.13.0.0 (dependency of slides)
+  ...
+
+A: You may not be using the dependency package in question but
+it may be a dependency of a dependency. In such case, you cannot
+fix the dependency version in your cabal file but you can use the
+``--allow-newer`` ``cabal`` option e.g. ``cabal build --allow-newer
+...``. You can also allow newer version of a specific set of packages
+e.g. ``cabal build --allow-newer=streamly ...``.
+
+Q: I do not see any dependency version issue in my ``.cabal`` file, but
+I am still getting a ``Could not resolve dependencies`` error. I am
+puzzled::
+
+    Resolving dependencies...
+    cabal: Could not resolve dependencies:
+    [__0] next goal: xls (user goal)
+    [__0] rejecting: xls-0.1.3, xls-0.1.2, xls-0.1.1 (constraint from user target
+    requires ==0.1.0)
+    [__0] rejecting: xls-0.1.0 (constraint from user target requires ==0.1.3)
+    [__0] fail (backjumping, conflict set: xls)
+    After searching the rest of the dependency tree exhaustively, these were the
+    goals I've had most trouble fulfilling: xls
+
+A: ``cabal`` looks for ``.cabal`` files in all the subdirectories. If
+the ``.cabal`` file in your current directory seems fine, look for any other
+``.cabal`` files in your tree (which may be lying around by mistake) 
+
+Q: Some random weird problem, unexpected behavior when building a project:
+
+A: When all else fails, try ``cabal clean`` or removing the ``dist-newstyle``
+directory.
+
+When Compiling Directly With GHC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Q: ``cannot satisfy -package-id`` error::
 
    $ ghc -O2 zz.hs
    Loaded package environment from /projects/streamly/.ghc.environment.x86_64-darwin-8.8.3
    <command line>: cannot satisfy -package-id fusion-plugin-0.2.1-inplace
        (use -v for more information)
 
-A: package ``fusion-plugin-0.2.1`` is specified as a dependency in the
-project but is not built. You can see this package listed in the
-``.ghc.environment*`` file. ``-inplace`` means it is a local package and not one
-downloaded from Hackage. You can just do ``cabal build fusion-plugin`` to
-make this error go away.
+A: The package ``fusion-plugin-0.2.1`` is specified as a dependency in
+your cabal file.  This package is listed in the ``.ghc.environment*``
+file. but has not been built. ``-inplace`` means it is a local package
+and not one downloaded from Hackage. Run ``cabal build fusion-plugin``
+to make this error go away.
 
-Q: When compiling with ``ghc`` directly I get a message like this::
+Q: ``Could not find module`` error::
 
   examples/WordClassifier.hs:28:1: error:
       Could not find module ‘Data.None’
@@ -613,12 +797,12 @@ Q: When compiling with ``ghc`` directly I get a message like this::
   28 | import Data.None
      | ^^^^^^^^^^^^^^^^
 
-A: You have not included the package providing ``Data.None`` in your
-``build-depends`` or you have not executed ``cabal build`` after doing
-so. You can use ``cabal install`` (from within the project directory) to
-install the package manually.
+A: You have not included the package providing module ``Data.None``
+in the ``build-depends`` field in cabal file or you have not executed
+``cabal build`` after doing so. You can use ``cabal install`` (from
+within the project directory) to install the package manually.
 
-Q: When compiling with ``ghc`` I get a message like this::
+Q: ``Could not load module ... It is a member of the hidden package`` error::
 
   examples/WordClassifier.hs:13:1: error:
   Could not load module ‘Data.HashMap.Strict’
@@ -630,23 +814,64 @@ Q: When compiling with ``ghc`` I get a message like this::
   13 | import qualified Data.HashMap.Strict as Map
      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A: The package providing the above module is known to cabal,
-but it is not in your ``build-depends`` or environment file. Use
-``ghc -package unordered-containers`` to make it available to ``ghc``
-manually.
+A: The package providing the module ``Data.HashMap.Strict`` is in
+``cabal``'s cache, but it is not mentioned in your cabal file's
+``build-depends`` field or in the ``ghc`` environment file. Compiling
+using ``ghc -package unordered-containers`` to make it available to
+``ghc`` anyway.
 
-Q: ``cabal`` is not able to build or install a package because the package
-dependency versions cannot be satisfied::
+When Installing packages
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Resolving dependencies...
-  cabal: Could not resolve dependencies:
-  [__0] trying: slides-0.1.0.0 (user goal)
-  [__1] trying: base-4.13.0.0/installed-4.13.0.0 (dependency of slides)
-  ...
+Occasionally you may install *library* packages *within your project*
+scope. However, when installing *executable* packages, make sure that you are
+outside a project directory, otherwise the project's dependency
+constraints would apply to the package you are installing and the
+installation may fail. ``cabal install`` may fail with some of the
+errors described above, see the sections above for a resolution of
+those.
 
-A: Try ``cabal build --allow-newer ...`` or ``cabal install
---allow-newer ...``. You can also allow newer version of a specific set
-of packages e.g. ``cabal build --allow-newer=streamly ...``.
+Occasionally ``cabal install foo`` may fail with a compilation error due to
+several reasons:
+
+* In many cases, packages take time to move to newer versions of
+  ``ghc``.  Ideally, if the dependency version bounds are correctly set
+  then the dependency resolution itself should fail with a newer compiler.
+  However, many package authors use relaxed upper bounds on dependencies,
+  and the build may fail with a compilation error if breaking changes
+  arrive in a newer version.
+* There may be an error in specifying the version bounds. The version bounds
+  may not have been tested.
+
+You can resolve these errors by:
+
+* Try the ``--allow-newer`` cabal option mentioned earlier.
+* Go to the Hackage page of the package, go to the ``Status`` section and click
+  on ``Hackage CI`` button, you can see the build matrix of the package.
+  From the matrix you can find out which compiler versions can compile
+  this package.  You can also take a look at the ``tested-with`` field
+  in the cabal file of the package, to find the right compiler version
+  to use. Try an appropriate version of ``ghc``.
+
+Bugs in cabal
+~~~~~~~~~~~~~
+
+Q: ``cabal`` throws an error like this, even though I have cabal-version as the
+first line::
+
+    Errors encountered when parsing cabal file ./xls.cabal:
+
+    xls.cabal:1:1: error:
+    cabal-version should be at the beginning of the file starting with spec version 2.2. See https://github.com/haskell/cabal/issues/4899
+
+        1 | cabal-version: 3
+          | ^
+
+A: This is a bug in cabal, use "3.0" instead of "3" in version.
+
+Q: Can ``cabal`` report better errors?
+
+A: Yes.
 
 Quick References
 ----------------
@@ -672,3 +897,7 @@ Packages:
 * `Haskell base package  <http://hackage.haskell.org/package/base>`_
 * `Haskell Debug.Trace module <hackage.haskell.org/package/base/docs/Debug-Trace.html>`_
 * `Haskell Prelude module <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
+
+Haskell Search Engine:
+
+* https://hoogle.haskell.org/
