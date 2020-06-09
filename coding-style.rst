@@ -261,9 +261,10 @@ whitespace between lambda and the first argument.
 
 ::
     
-    a + b
-    (a + b)
-    \x -> return x
+    a + b          -- single whitespace around operators
+    (a + b)        -- no whitespace around parenthesis
+    [1, 2]         -- no whitespace around square brackets
+    \x -> return x -- no whitespace after "\"
 
 Avoid creating long expressions, name parts of a long expression using `let`,
 `where` or top level binding and use those names to make the expression
@@ -365,20 +366,18 @@ the rest are in multiline format.
 Variable Naming
 ---------------
 
-Use camelCase.
-
-Do not capitalize all letters of an abbreviation, it may become
-problematic if capitals are next to each other e.g. `decodeHTTPUTF8` vs
-`decodeHttpUtf8`.
-
-In general, avoid using a prime on the variable names, e.g. use `step1`
-instead of `step'`. Numbered indexing is better because it is easier
-on the eyes and we can represent multiple generations of the variables
-without adding more characters e.g. we can write `step2` instead of
-`step''`.
-
-Use shorter variable names for shorter scopes, and longer variable names for
-bigger scopes.
+* Use verbs for functions and nouns for values.
+* Use camelCase.
+* Do not capitalize all letters of an abbreviation, it may become
+  problematic if capitals are next to each other e.g. `decodeHTTPUTF8` vs
+  `decodeHttpUtf8`.
+* Use shorter variable names for shorter scopes, and longer variable names for
+  bigger scopes.
+* In general, avoid using a prime on the variable names, e.g. use `step1`
+  instead of `step'`. Numbered indexing is better because it is easier
+  on the eyes and we can represent multiple generations of the variables
+  without adding more characters e.g. we can write `step2` instead of
+  `step''`.
 
 Top Level Definitions
 ---------------------
@@ -403,9 +402,9 @@ Top Level Definitions
   nilM :: Monad m => m b -> Stream m a
   nilM m = Stream (\_ _ -> m >> return Stop) ()
 
-Pragmas are important for performance, they are placed before the
-signature so that they are clearly visible (compared to placement after
-the function definition).
+INLINE/SPECIALIZE pragmas are important for performance, they (and
+pragmas in general) are placed before the signature so that they are
+clearly visible (compared to placement after the function definition).
 
 Single line::
 
@@ -580,7 +579,7 @@ Multi line ::
             _ -> ...
       | otherwise = False
 
-In case ::
+In ``case`` ::
 
   case x of
       One y
@@ -594,20 +593,38 @@ In case ::
       Two y ->
           ...
 
-Its preferable to not mix single line and multi-line formats, but sometimes you
-can, use your judgement.
+Its preferable to not mix single line and multi-line formats, but
+sometimes you can (especially, the first line or the last line could be
+in single line format), use your judgement.
 
 Function Application & Composition
 ----------------------------------
 
 Single line::
 
-    y = f (g (h x))
-    y = f $ g $ h x
-    y = h x & g & f
+    scanlM sstep (return szero) (return . sessionOutputStream) flush stream
+
+    k x = f (g (h x))
+    k x = f $ g $ h x
+    k x = h x & g & f
     k = f . g . h
 
+Two line::
+
+    scanlM
+        sstep (return szero) (return . sessionOutputStream) flush stream
+
+    scanlM sstep (return szero) (return . sessionOutputStream) flush stream
+        arg1 arg2 ...
+
 Multi line::
+
+    scanlM
+        sstep
+        (return szero)
+        (return . sessionOutputStream)
+        flush
+        stream
 
     lookup e m =
         foldrM
@@ -642,6 +659,15 @@ Multi line::
         . S.unfold TCP.acceptOnPort
         ) 8090
 
+    -- non-aligning operators
+    func =
+        ( S.drain
+        `op` encodeLatin1Lax
+        `ope` S.concatUnfold A.read
+        `oper` S.concatMapWith parallel use
+        `opera` S.unfold TCP.acceptOnPort 8090
+        )
+
 Multi line in `do` block::
 
     func = do
@@ -653,12 +679,13 @@ Multi line in `do` block::
         & S.drain
         )
 
-Multi line with lambdas, the last application could be a multi line expr::
+The first line can collapse multiple items in the same line and the last line
+could be a multi line expr::
 
-  return $ Skip $
-        if done
-        then (FromSVarDone sv)
-        else (FromSVarRead sv)
+  return $ Skip $      -- multiple `$` applications in a single line
+      if done
+      then (FromSVarDone sv)
+      else (FromSVarRead sv)
 
   f x =
       g $ h $ \y -> do
@@ -666,6 +693,14 @@ Multi line with lambdas, the last application could be a multi line expr::
           return y
 
   -- alternatively it can be formatted like a sequence
+
+  ( return
+  $ Skip
+  $ if done
+    then (FromSVarDone sv)
+    else (FromSVarRead sv)
+  )
+
   f x =
       ( g
       $ h
