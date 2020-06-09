@@ -890,6 +890,7 @@ Tool Guides:
 * `cabal user guide <https://www.haskell.org/cabal/users-guide/>`_
    * `File format and field descriptions <https://www.haskell.org/cabal/users-guide/developing-packages.html>`_
    * `Command line options <https://www.haskell.org/cabal/users-guide/nix-local-build.html>`_
+* `Libraries tied to GHC <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history>`_
 
 Packages:
 
@@ -897,6 +898,8 @@ Packages:
 * `Haskell base package  <http://hackage.haskell.org/package/base>`_
 * `Haskell Debug.Trace module <hackage.haskell.org/package/base/docs/Debug-Trace.html>`_
 * `Haskell Prelude module <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
+* `Stackage <https://www.stackage.org/>`_
+* `Documentation by module on stackage <https://www.stackage.org/lts/docs>`_
 
 Haskell Search Engine:
 
