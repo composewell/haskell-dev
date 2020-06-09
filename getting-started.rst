@@ -13,6 +13,9 @@ shell. This document, with some changes, may apply to Windows as well
 but it has not been tested.  We assume ``cabal`` version 3.0 or higher
 and GHC version ``8.2.1`` or higher.
 
+.. contents:: Table of Contents
+   :depth: 1
+
 Install ``ghc`` and ``cabal``
 -----------------------------
 
@@ -59,8 +62,33 @@ function where the program execution starts::
 The first line is optional, any module without an explicit name is
 treated as a ``Main`` module by default.
 
+Haskell Packages
+----------------
+
+The canonical Haskell package repository is `Hackage
+<http://hackage.haskell.org/>`_, hosting thousands of packages consisting of
+libraries as well as useful executable programs.  You can browse the packages
+and their documentation on `Hackage <http://hackage.haskell.org/>`_.
+
+``cabal`` can install packages from Hackage so that they can be used by
+``ghc``. To get familiar with ``cabal``'s commands and options use::
+
+    $ cabal --help
+
+Before you can install or use the packages, you need to fetch and update
+the list of packages from Hackage::
+
+    $ cabal update
+
+Side Note: ``cabal`` keeps its housekeeping data in ``$HOME/.cabal``. The
+fetched package index and packages are kept in
+``$HOME/.cabal/packages/hackage.haskell.org/``.
+
+Compiling Haskell Programs
+--------------------------
+
 Isolated Compilation
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 We compiled the above program using ``ghc`` directly. This program
 has a dependency only on the ``base`` package which is shipped with ``ghc``.
@@ -92,30 +120,8 @@ can of course use ``cabal install`` to install executables globally e.g.
 ``cabal install hlint --install-dir ~/.local/bin`` would install the
 ``hlint`` executable in ``~/.local/bin``.
 
-Haskell Packages
-----------------
-
-The canonical Haskell package repository is `Hackage
-<http://hackage.haskell.org/>`_, hosting thousands of packages consisting of
-libraries as well as useful executable programs.  You can browse the packages
-and their documentation on `Hackage <http://hackage.haskell.org/>`_.
-
-``cabal`` can install packages from Hackage so that they can be used by
-``ghc``. To get familiar with ``cabal``'s commands and options use::
-
-    $ cabal --help
-
-Before you can install or use the packages, you need to fetch and update
-the list of packages from Hackage::
-
-    $ cabal update
-
-Side Note: ``cabal`` keeps its housekeeping data in ``$HOME/.cabal``. The
-fetched package index and packages are kept in
-``$HOME/.cabal/packages/hackage.haskell.org/``.
-
-Building a Program
-------------------
+Building and Running a Program
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Let us write the hello world example in an isolated build
 environment. We will create a cabal ``package`` for our program to
@@ -152,7 +158,7 @@ library package required by all Haskell programs. ``base`` package
 provides the `Prelude` module which is implicitly imported by Haskell
 programs. The function ``putStrLn`` in our program comes from the
 `Prelude <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
-module.
+module. You can add more packages here separated with commas.
 
 The default package name ``hello-world`` is automatically derived by
 ``cabal init`` from the current directory name.  You can use a different
@@ -219,7 +225,7 @@ command line options (with a ``v1-`` prefix) which may be mentioned in
 some sections of the user guide. 
 
 Specifying ``ghc-options``
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the ``executable`` stanza of the cabal file we can use the ``ghc-options``
 field to pass command line options to ``ghc`` when building our executable::
@@ -243,7 +249,7 @@ particular package is not found.  For more details about how ghc package
 management works see `GHC package management guide <ghc-packages.md>`_.
 
 Compiling with ``ghc`` directly
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now that we have an isolated package build setup. We can even directly use
 ``ghc`` (version ``8.2.1`` or higher) to compile the files in our package
@@ -273,7 +279,7 @@ Now we can use ``ghc`` directly to compile any module in this package::
   Hello, Haskell!
 
 How It works?
-~~~~~~~~~~~~~
+.............
 
 From version ``8.2.1`` onwards ``ghc`` always looks for an environment
 file in the current directory or in any of the parent directories
@@ -287,17 +293,17 @@ Note: Do not forget to do a ``cabal build`` before compiling with ``ghc``
 directly.
 
 Using extra dependencies
-~~~~~~~~~~~~~~~~~~~~~~~~
+........................
 
-If you want to use a package that is not in the ``build-depends`` section of
-the cabal file then you need to first install it from within the project
-directory and then explicitly ask ``ghc`` to use it::
+If you want to use a package not specified in the ``build-depends``
+section of the cabal file then you need to first install it from within
+the project directory and then explicitly ask ``ghc`` to use it::
 
     $ cabal install unordered-containers
     $ ghc -package unordered-containers Main.hs
 
 GHC Documentation
------------------
+~~~~~~~~~~~~~~~~~
 
 It may be a good idea to go through the `ghc` help text::
 
@@ -306,8 +312,8 @@ It may be a good idea to go through the `ghc` help text::
 
 See `the GHC user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/>`_ for more details.
 
-Modules
--------
+Creating Modules
+~~~~~~~~~~~~~~~~
 
 Till now, we used only one module the ``Main`` module in our program. Let us
 now create another module and import it in our ``Main`` module::
@@ -356,33 +362,6 @@ We need to keep the following in mind when creating modules:
 * For hierarchical modules, if the module name is ``Example.Hello``
   then the path of the module in the file system must be
   ``Example/Hello.hs`` relative to the import root.
-
-Using Library Packages
-----------------------
-
-We can use any package from Hackage in our program by specifying it in
-the ``build-depends`` field (do not forget to execute ``cabal update``
-at least once before this).  Let's try to use the library `streamly
-<http://hackage.haskell.org/package/streamly>`_ in our program.
-
-First add ``streamly`` to the dependencies::
-
-  executable hello-world
-    main-is:             Main.hs
-    build-depends:       base >=4.13 && <4.14, streamly
-
-``import`` and use it in our ``Main`` module::
-
-  $ cat Main.hs
-  import qualified Streamly.Prelude as S
-
-  main = S.drain $ S.fromListM [putStrLn "hello", putStrLn "world"]
-
-  $ cabal run
-
-See `the README for streamly on Hackage
-<http://hackage.haskell.org/package/streamly#readme>`_ for more code snippets
-to try out.
 
 Interactive Haskell REPL (GHCi)
 -------------------------------
@@ -450,8 +429,38 @@ Type ``:?`` for help.
 See `the GHCi user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
 for comprehensive documentation.
 
+Using Dependencies
+------------------
+
+Using Packages from Hackage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We can use any package from Hackage in our program by specifying it in
+the ``build-depends`` field (do not forget to execute ``cabal update``
+at least once before this).  Let's try to use the library `streamly
+<http://hackage.haskell.org/package/streamly>`_ in our program.
+
+First add ``streamly`` to the dependencies::
+
+  executable hello-world
+    main-is:             Main.hs
+    build-depends:       base >=4.13 && <4.14, streamly
+
+``import`` and use it in our ``Main`` module::
+
+  $ cat Main.hs
+  import qualified Streamly.Prelude as S
+
+  main = S.drain $ S.fromListM [putStrLn "hello", putStrLn "world"]
+
+  $ cabal run
+
+See `the README for streamly on Hackage
+<http://hackage.haskell.org/package/streamly#readme>`_ for more code snippets
+to try out.
+
 Using Packages from github
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Let's say you want to play with the latest/unreleased version of `streamly from
 github <https://github.com/composewell/streamly>`_. You will need a
@@ -480,50 +489,8 @@ We can now use ``cabal repl`` as usual and we will be using the version of
 
     $ cabal repl
 
-Cabal configuration
--------------------
-
-The behavior of ``cabal`` is determined by the following configuration,
-in the increasing priority order:
-
-* $HOME/.cabal/config (the user-wide global configuration)
-* cabal.project (the project configuration)
-* cabal.project.freeze (the output of cabal freeze)
-* cabal.project.local (the output of cabal configure)
-* command line flags
-* Environment variables
-
-`See cabal.project section in cabal user guide <https://www.haskell.org/cabal/users-guide/nix-local-build.html#configuring-builds-with-cabal-project>`_.
-
-Customizing how dependencies are built
---------------------------------------
-
-Options passed to the build command, are ``global`` which means they
-apply to all your source packages, their dependencies, and dependencies
-of dependencies. For example::
-
-    $ cabal build --ghc-options=-Werror
-
-We can use the ``configure`` command to persistently save the settings in a
-``cabal.project.local`` file::
-
-  $ cabal configure --ghc-options=-Werror 
-  $ cat cabal.project.local
-
-  package *
-    ghc-options: -Werror
-
-  program-options
-    ghc-options: -Werror
-
-If we want a setting to be applied only to a certain package or dependency::
-
-  $ cat cabal.project
-  package streamly
-    ghc-options: -Werror
-
-Non-Haskell Dependencies
-------------------------
+Using Non-Haskell Dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a package depends on a C library we need to tell cabal where the
 library and its header files are::
@@ -549,8 +516,35 @@ invoking cabal from inside (e.g. ghc build)::
   $ export C_INCLUDE_PATH=/opt/local/include
   $ export LIBRARY_PATH=/opt/local/lib:/usr/lib:/lib
 
+Customizing how dependencies are built
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Options passed to the build command, are ``global`` which means they
+apply to all your source packages, their dependencies, and dependencies
+of dependencies. For example::
+
+    $ cabal build --ghc-options=-Werror
+
+We can use the ``configure`` command to persistently save the settings in a
+``cabal.project.local`` file::
+
+  $ cabal configure --ghc-options=-Werror 
+  $ cat cabal.project.local
+
+  package *
+    ghc-options: -Werror
+
+  program-options
+    ghc-options: -Werror
+
+If we want a setting to be applied only to a certain package or dependency::
+
+  $ cat cabal.project
+  package streamly
+    ghc-options: -Werror
+
 Freezing Dependency Versions
-----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``cabal`` picks the dependency versions based on the constraints
 specified in the cabal file. When newer versions of dependencies become
@@ -566,7 +560,7 @@ This command can also be useful if you want to know all the dependencies of the
 project and their versions.
 
 Using Stackage Snapshots
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 `Stackage <https://www.stackage.org/>`_ releases a consistent set
 of versions of Haskell packages that are known to build together,
@@ -577,7 +571,7 @@ stackage::
     curl https://www.stackage.org/lts/cabal.config > cabal.project.freeze
 
 Packages Tied to GHC
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 There are some packages whose versions change along with GHC versions
 because they depend on the GHC version. Versions of these packages (in
@@ -591,6 +585,21 @@ wired-in packages in ghc. Some important wired-in packages are:
 
 `See this link for a complete list of wired-in packages
 <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries>`_.
+
+Cabal configuration
+~~~~~~~~~~~~~~~~~~~
+
+The behavior of ``cabal`` is determined by the following configuration,
+in the increasing priority order:
+
+* $HOME/.cabal/config (the user-wide global configuration)
+* cabal.project (the project configuration)
+* cabal.project.freeze (the output of cabal freeze)
+* cabal.project.local (the output of cabal configure)
+* command line flags
+* Environment variables
+
+`See cabal.project section in cabal user guide <https://www.haskell.org/cabal/users-guide/nix-local-build.html#configuring-builds-with-cabal-project>`_.
 
 Debugging
 ---------
