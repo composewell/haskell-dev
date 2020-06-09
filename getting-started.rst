@@ -576,6 +576,22 @@ stackage::
 
     curl https://www.stackage.org/lts/cabal.config > cabal.project.freeze
 
+Packages Tied to GHC
+--------------------
+
+There are some packages whose versions change along with GHC versions
+because they depend on the GHC version. Versions of these packages (in
+the dependency version ranges) cannot be upgraded unless you use an
+appropriate version of GHC as well.  These packages are also known as
+wired-in packages in ghc. Some important wired-in packages are:
+
+* `base <http://hackage.haskell.org/package/base>`_
+* `template-haskell <http://hackage.haskell.org/package/template-haskell>`_
+* `ghc-prim <http://hackage.haskell.org/package/ghc-prim>`_
+
+`See this link for a complete list of wired-in packages
+<https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries>`_.
+
 Debugging
 ---------
 
@@ -593,8 +609,8 @@ practice. `gdb` can also be used on Haskell executables, however, this is
 mainly for advanced users because the low level code has little or no
 similarity with the high level code.
 
-Haskell versions
-----------------
+Haskell (GHC) versions
+----------------------
 
 GHC is the de-facto Haskell compiler, Haskell version practically means
 GHC version.  New versions of GHC are released quite often.  Compared
@@ -890,17 +906,21 @@ Tool Guides:
 * `cabal user guide <https://www.haskell.org/cabal/users-guide/>`_
    * `File format and field descriptions <https://www.haskell.org/cabal/users-guide/developing-packages.html>`_
    * `Command line options <https://www.haskell.org/cabal/users-guide/nix-local-build.html>`_
-* `Libraries tied to GHC <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history>`_
+
+Package Repositories, Documentation, Search:
+
+* `Haskell package repository (Hackage) <http://hackage.haskell.org/>`_
+* `Stackage package snapshots <https://www.stackage.org/>`_
+* `Documentation by module on stackage <https://www.stackage.org/lts/docs>`_
+* `Haskell Search Engine <https://hoogle.haskell.org/>`_
 
 Packages:
 
-* `Haskell package repository (Hackage) <http://hackage.haskell.org/>`_
-* `Haskell base package  <http://hackage.haskell.org/package/base>`_
-* `Haskell Debug.Trace module <hackage.haskell.org/package/base/docs/Debug-Trace.html>`_
-* `Haskell Prelude module <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
-* `Stackage <https://www.stackage.org/>`_
-* `Documentation by module on stackage <https://www.stackage.org/lts/docs>`_
+* `base: The Haskell standard library <http://hackage.haskell.org/package/base>`_
 
-Haskell Search Engine:
-
-* https://hoogle.haskell.org/
+  * `Haskell Debug.Trace module <hackage.haskell.org/package/base/docs/Debug-Trace.html>`_
+  * `Haskell Prelude module <http://hackage.haskell.org/package/base/docs/Prelude.html>`_
+* `template-haskell: The Haskell macro system <http://hackage.haskell.org/package/template-haskell>`_
+* `ghc-prim: Primitives provided by GHC <http://hackage.haskell.org/package/ghc-prim>`_
+* `GHC boot packages <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries>`_.
+* `GHC version to GHC boot package version mapping <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history>`_
