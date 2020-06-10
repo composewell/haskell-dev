@@ -13,16 +13,19 @@ could be subjective, not all may agree but we need to have one style
 nevertheless. As far as possible we try to keep style conventions
 consistent across different language constructs as well.
 
-Match the local style
----------------------
-
 As long as possible please try to match the style of the file or the
 surrounding code. Sometimes we may have copied a file from somewhere
 else and we do not want to change the style, so its important to adhere
 to the local style rather than mixing styles.
 
+.. contents:: Table of Contents
+   :depth: 1
+
+General Guiding Principles
+--------------------------
+
 Define before use
------------------
+~~~~~~~~~~~~~~~~~
 
 Define top level declarations before their first use in the file. In
 other words, use the `bottom up style` to organize top level declarations.
@@ -50,26 +53,22 @@ on to the code using it by moving further down in the file.
 To summarize, this is useful when refactoring or changing code in bulk.
 
 List modules in dependency order
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use the same principle as described in the previous section for
-listing modules in the cabal file, list them in dependency order. When
-refactoring, start with the module higher most in the list and comment
-out the rest, the whole library still keeps compiling.
+Use the dependency order principle as described in the previous section
+for listing modules in the cabal file as well. When refactoring, start
+refactoring the module higher most in the list first and comment out the
+rest, the whole library still keeps compiling.
 
-Line Length
------------
+Whitespace
+~~~~~~~~~~
 
-Maximum 80 columns. This is very helpful when seeing diffs side by side. 
-
-Below, we have listed styles for single line and multi line cases. The
-single line case is used when the whole construct fits into a single
-line and multi line when it becomes longer than 80 columns and needs to
-be broken into more than one line. In some cases, single line is meant
-for a nested construct rather than for the outer one.
+Do not try to reduce whitespace and make the code dense, instead make liberal
+use of horizontal or vertical whitespace to make the code clearer and easier to
+read.
 
 Indentation
------------
+~~~~~~~~~~~
 
 Indent each level by 4 spaces. 2 spaces makes the code look cluttered, I
 would prefer 8 spaces but it often makes lines too long in Haskell with
@@ -83,6 +82,101 @@ indentation levels then it means you need to one of the following:
 * Use a `where` clause to factor out some definitions
 * Use top level definitions
 
+Line Length
+~~~~~~~~~~~
+
+Maximum 80 columns. This is very helpful when seeing diffs side by side. 
+
+Sequence of items
+~~~~~~~~~~~~~~~~~
+
+Wherever there is a sequence of items of the same kind they are either
+placed on the same line (when the list is short) or each of them is on
+its own line. This principle also helps in reducing the size of diff
+automatically when new items are inserted in the sequence.
+
+In the following sections, we have listed styles of different constructs
+for single line and multi line cases. The single line case is used when
+the whole construct fits into a single line and multi line when it
+becomes longer than 80 columns and needs to be broken into more than one
+line.
+
+Try to apply the same style to all the items in a sequence. For example,
+do not use this::
+
+    f x y 
+        x > y | 
+            do something
+        x == y | do something -- should be on the next line
+        otherwise |
+            do something
+
+Its preferable to not mix single line and multi-line formats, but
+sometimes you can, especially the first or last line could be in a
+single line format even if the rest are in multiline format.
+
+Do not try to align the items with each other based on some separator
+on each line.  Aligning becomes a headache when new entries are added
+in the sequence, it requires changing all the lines and produces
+unnecessary diffs.
+
+Delineating Sections
+--------------------
+
+In the file use comments as follows to delineate different logical sections,
+dashes are up to 79 columns::
+
+    -------------------------------------------------------------------------------
+    -- Type
+    -------------------------------------------------------------------------------
+
+Where clause
+------------
+
+``where`` clause is used in many constructs to separate a list of
+definitions from the main part of the construct. For clarity, and to
+explicitly indicate that a list of definition follows it is preferable
+to use ``where`` clause on its own line with a preceding and following
+blank line. However, it is acceptable to end or start a line with
+``where`` in some cases::
+
+  -- when there is a single line LHS in the clause
+  module Streamly.Internal.Data.Stream (Step (..)) where
+
+  ...
+
+  class Functor f where
+    ...
+
+  -- when there is a single line RHS in the clause
+  f x = 
+      ...
+
+      where f1 = ...
+
+Multi line, do not indent the body of `where` clause::
+
+  f x = 
+      ...
+
+      where
+
+      f1 = ...
+
+      f2 y = do
+          putStrLn x
+          ...
+
+Single line definitions within `where` may omit blank lines between them::
+
+  f x = 
+      ...
+
+      where
+
+      f1 = ...
+      f2 y = ...
+
 Module level pragmas
 --------------------
 
@@ -92,15 +186,16 @@ Keep the lines sorted by the pragma name, do not align the ends of lines::
   {-# LANGUAGE CPP #-}
   {-# LANGUAGE ConstraintKinds #-}
 
-Aligning end of lines becomes a headache when new entries are added, it
-requires changing all the lines and produces unnecessary diffs.
-
 Module Declaration
 ------------------
 
 Single line ::
 
-  module Streamly.Internal.Data.Stream (Step (..)) where
+  module Streamly.Internal.Data.Stream (Step (..))
+  
+  where
+
+  ...
 
 Multi-line ::
 
@@ -139,24 +234,79 @@ Multi line, list style to avoid rearrangement when adding new items::
         , mask_
         )
 
-Delineating Sections
---------------------
+Variable Naming
+---------------
 
-In the file use comments as follows to delineate different logical sections,
-dashes are up to 79 columns::
+* Use verbs for functions and nouns for values.
+* Use camelCase.
+* Do not capitalize all letters of an abbreviation, it may become
+  problematic if capitals are next to each other e.g. `decodeHTTPUTF8` vs
+  `decodeHttpUtf8`.
+* Use shorter variable names for shorter scopes, and longer variable names for
+  bigger scopes.
+* In general, avoid using a prime on the variable names, e.g. use `step1`
+  instead of `step'`. Numbered indexing is better because it is easier
+  on the eyes especially when there are many of them sprinkled around
+  and we can represent multiple generations of the variables without
+  adding more characters e.g. we can write `step2` instead of `step''`.
 
-    -------------------------------------------------------------------------------
-    -- Type
-    -------------------------------------------------------------------------------
+Top Level Declarations
+----------------------
+
+* All top level Declarations should be separated by a blank line.
+  Multiple single line declarations may not have a blank line
+  between them.
+* Pragmas must be placed before the declaration it applies to
+* haddock comments should come before the pragmas
+* There should be no blank lines between haddock comment, pragmas, and
+  the declaration.
+
+The LHS and RHS can be combined on the same line when the whole
+definition fits in a single line. Otherwise, RHS should start on a
+separate line. Some constructs like ``do`` have an exception to this
+rule, in which case the keyword ``do`` could be on the same line as LHS.
+
+Example of multiple declarations separated by a blank line::
+
+  -- | An empty 'Stream'.
+  {-# INLINE nil #-}
+  nil :: Monad m => Stream m a
+  nil = Stream (\_ _ -> return Stop) ()
+
+  -- | An empty 'Stream' with a side effect.
+  {-# INLINE nilM #-}
+  nilM :: Monad m => m b -> Stream m a
+  nilM m = Stream (\_ _ -> m >> return Stop) ()
+
+Single line::
+
+  nil = Stream (\_ _ -> return Stop) ()
+
+Two line::
+
+  -- fit in two lines when one line is too long
+  nil =
+      Stream (\_ _ -> return Stop) ()
+
+Multi line::
+
+  f x =
+      case x of
+          1 -> ...
+          2 -> ...
+          _ -> ...
+
+INLINE/SPECIALIZE pragmas are important for performance, those (and
+pragmas in general) are placed before the signature so that they are
+clearly visible (compared to placement after the function definition).
 
 Data Declarations
 -----------------
 
 Separate data declarations by a blank line.
 
-Single line ::
+Single line::
 
-  {-# ANN type Step Fuse #-}
   data Step s a = Yield a s | Skip s | Stop
 
   data Person = Person String String Int
@@ -164,7 +314,12 @@ Single line ::
   -- Single field records
   data Person = Person {firstName :: String}
 
-Multi line ::
+Two line::
+
+  data Step s a =
+      Yield a s | Skip s | Stop
+
+Multi line::
 
   -- | Sum types
   data Step s a =
@@ -200,6 +355,43 @@ Multi line ::
         -- | Age
       , age       :: Int
       } deriving (Eq, Show)
+
+Signatures
+----------
+
+To keep signatures consistent with function definition formatting style,
+we keep the `::` on the same line as the function name as we keep `=` on
+the same line in definitions.
+
+Single line::
+    
+    f :: (Monad m, IsStream m, Num a) => a -> t m a
+
+Two line::
+
+    -- Constraint can be combined with the LHS line as long as it is not broken
+    -- on more than one line.
+    f :: (Monad m, IsStream m, Num a)
+        => a -> t m a
+    
+Multi line::
+    
+    f ::
+        (Monad m, IsStream m, Num a)
+        => a -> t m a
+
+    f ::
+           (a -> b)
+        -> t m a
+        -> t m b
+
+    f ::
+        ( Monad m    -- ^ Monad
+        , IsStream m -- ^ Stream
+        , Num a      -- ^ Num
+        )
+        => a         -- ^ a
+        -> t m a     -- ^ t m a
 
 Sequence Types
 --------------
@@ -338,11 +530,11 @@ Single line ::
 
     if x then y else z
 
+Multi line ::
+
     if x
     then y
     else z
-
-Multi line ::
 
     if x
     then
@@ -359,103 +551,13 @@ Cascading ::
     then u
     else v
 
-Its preferable to not mix single line and multi-line formats, but sometimes you
-can, especially the first or last line could be in a single line format even if
-the rest are in multiline format.
+Top Level Function Definitions
+------------------------------
 
-Variable Naming
----------------
-
-* Use verbs for functions and nouns for values.
-* Use camelCase.
-* Do not capitalize all letters of an abbreviation, it may become
-  problematic if capitals are next to each other e.g. `decodeHTTPUTF8` vs
-  `decodeHttpUtf8`.
-* Use shorter variable names for shorter scopes, and longer variable names for
-  bigger scopes.
-* In general, avoid using a prime on the variable names, e.g. use `step1`
-  instead of `step'`. Numbered indexing is better because it is easier
-  on the eyes and we can represent multiple generations of the variables
-  without adding more characters e.g. we can write `step2` instead of
-  `step''`.
-
-Top Level Definitions
----------------------
-
-* Declarations should be separated by a blank line.
+* See the "top level declarations" section earlier for general guidelines and
+  examples.
 * Each declaration must have a type signature
-* `INLINE` and `SPECIALIZE` pragmas must be placed before the signature
-* haddock comments should come before the pragmas
-* There should be no blank lines between haddock, pragmas, signature and
-  declaration.
 * Do not use a blank line between multiple equations of the same function.
-
-::
-
-  -- | An empty 'Stream'.
-  {-# INLINE nil #-}
-  nil :: Monad m => Stream m a
-  nil = Stream (\_ _ -> return Stop) ()
-
-  -- | An empty 'Stream' with a side effect.
-  {-# INLINE nilM #-}
-  nilM :: Monad m => m b -> Stream m a
-  nilM m = Stream (\_ _ -> m >> return Stop) ()
-
-INLINE/SPECIALIZE pragmas are important for performance, they (and
-pragmas in general) are placed before the signature so that they are
-clearly visible (compared to placement after the function definition).
-
-Single line::
-
-  nil = Stream (\_ _ -> return Stop) ()
-
-Multi line::
-
-  -- fit in two lines when one line is too long
-  nil =
-      Stream (\_ _ -> return Stop) ()
-
-  f x =
-      case x of
-          1 -> ...
-          2 -> ...
-          _ -> ...
-
-Signatures
-----------
-
-To keep signatures consistent with function definition formatting style,
-we keep the `::` on the same line as the function name as we keep `=` on
-the same line in definitions.
-
-Single line ::
-    
-    f :: (Monad m, IsStream m, Num a) => a -> t m a
-
-Multi line ::
-    
-    -- fit in two lines when one line is too long
-    -- without constraints
-    f ::
-        a -> t m a
-
-    -- fit in two lines when one line is too long
-    -- with constraints
-    f :: (Monad m, IsStream m, Num a)
-        => a -> t m a
-
-    f ::
-        (Monad m, IsStream m, Num a)
-        => a -> t m a
-
-    f ::
-        ( Monad m    -- ^ Monad
-        , IsStream m -- ^ Stream
-        , Num a      -- ^ Num
-        )
-        => a         -- ^ a
-        -> t m a     -- ^ t m a
 
 Let Clause
 ----------
@@ -464,9 +566,9 @@ Single line ::
     
     let x = f x in x
 
-Multi line, align the end of `let` with end of `in`, this alignment is
-compatible with `do` blocks which require `in` to be indented beyond the start
-of `let`::
+Multi line, align the end of `let` with end of `in`, this alignment
+is compatible with `do` blocks which require `in` to be nested inside
+`let`::
 
     let x = f x
      in x
@@ -492,44 +594,6 @@ multi line definitions with a blank line::
                 False -> y
             ...
      in f a b || g c d
-
-Its preferable to not mix single line and multi-line formats, but sometimes you
-can, use your judgement.
-
-Where Clause
-------------
-
-Use a blank line before and after the `where` clause.
-
-Single line::
-
-  f x = 
-      ...
-
-      where f1 = ...
-
-Multi line, do not indent the body of `where` clause::
-
-  f x = 
-      ...
-
-      where
-
-      f1 = ...
-
-      f2 y = do
-          putStrLn x
-          ...
-
-Single line definitions within `where` may omit blank lines between them::
-
-  f x = 
-      ...
-
-      where
-
-      f1 = ...
-      f2 y = ...
 
 `do` Blocks
 -----------
