@@ -234,6 +234,18 @@ Multi line, list style to avoid rearrangement when adding new items::
         , mask_
         )
 
+Group all imports in a single block including qualified or
+unqualified imports, imports from external libraries or local
+internal imports. Having multiple groupings makes one think about the
+groups/grouping scheme every time you have to insert an import, making
+it difficult to maintain.
+
+There is one exception to the above rule, the imports that are not
+qualified and are not importing specific symbols explicitly are placed
+in a separate group, this is to help in figuring out where a symbol
+might be coming from when it is not qualified/explicit. Usually we
+should not have this group.
+
 Variable Naming
 ---------------
 
