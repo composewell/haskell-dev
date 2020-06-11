@@ -262,11 +262,16 @@ use::
   cabal build --write-ghc-environment-files=always
 
 This will generate an ``environment`` file at the root of the package
-directory, and also configure `cabal` to produce one on each ``cabal
-build`` ::
+directory::
 
   $ ls .ghc.*
   .ghc.environment.x86_64-darwin-8.8.3
+
+You can put this in your ``$HOME/cabal.config`` or ``cabal.project.local`` so
+that you do not have to specify this on each build::
+
+    $ cat cabal.project.local
+    write-ghc-environment-files: always
 
 Now we can use ``ghc`` directly to compile any module in this package::
 
@@ -692,6 +697,8 @@ The cache size may grow as more dependencies are fetched and built. Commonly
 Frequently Asked Questions (FAQ)
 --------------------------------
 
+Make sure that you have read and followed the guide above.
+
 When building your project
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -797,8 +804,8 @@ Q: Some random weird problem, unexpected behavior when building a project:
 A: When all else fails, try ``cabal clean`` or removing the ``dist-newstyle``
 directory.
 
-When Compiling Directly With GHC
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+When Compiling Directly With GHC or using GHCi
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Q: ``cannot satisfy -package-id`` error::
 
@@ -809,7 +816,7 @@ Q: ``cannot satisfy -package-id`` error::
 
 A: The package ``fusion-plugin-0.2.1`` is specified as a dependency in
 your cabal file.  This package is listed in the ``.ghc.environment*``
-file. but has not been built. ``-inplace`` means it is a local package
+file but has not been built. ``-inplace`` means it is a local package
 and not one downloaded from Hackage. Run ``cabal build fusion-plugin``
 to make this error go away.
 
@@ -822,10 +829,19 @@ Q: ``Could not find module`` error::
   28 | import Data.None
      | ^^^^^^^^^^^^^^^^
 
-A: You have not included the package providing module ``Data.None``
-in the ``build-depends`` field in cabal file or you have not executed
-``cabal build`` after doing so. You can use ``cabal install`` (from
-within the project directory) to install the package manually.
+A: To resolve this:
+
+1) Add the package providing module ``Data.None`` in the
+   ``build-depends`` field in cabal file. Do not forget to do ``cabal build
+   --write-ghc-environment-files=always`` after adding it.
+
+   Alternatively, use ``cabal install <package>`` (from within the project
+   directory) to add the package to your ``.ghc.environment.*`` file.
+
+2) If the package providing ``Data.None`` is already present in
+   ``build-depends``, check if you have a ``.ghc.environment.*`` file in the
+   project directory, if not use ``cabal build
+   --write-ghc-environment-files=always`` to generate it.
 
 Q: ``Could not load module ... It is a member of the hidden package`` error::
 
@@ -839,11 +855,20 @@ Q: ``Could not load module ... It is a member of the hidden package`` error::
   13 | import qualified Data.HashMap.Strict as Map
      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A: The package providing the module ``Data.HashMap.Strict`` is in
-``cabal``'s cache, but it is not mentioned in your cabal file's
-``build-depends`` field or in the ``ghc`` environment file. Compiling
-using ``ghc -package unordered-containers`` to make it available to
-``ghc`` anyway.
+A: The package providing the module ``Data.HashMap.Strict``, i.e.
+``unordered-containers`` is available in ``cabal``'s package cache,
+but it is not mentioned as a dependency in your project. Do any of the
+following to resolve this:
+
+1) Add ``unordered-containers`` in the ``build-depends`` field in cabal file.
+   Do not forget to do ``cabal build --write-ghc-environment-files=always``
+   after adding it.
+
+2) Use ``cabal install <package>`` (from within the project directory) to add
+   the package to your ``.ghc.environment.*`` file.
+
+3) Use ``ghc -package unordered-containers`` to make it available to ``ghc``
+   anyway.
 
 When Installing packages
 ~~~~~~~~~~~~~~~~~~~~~~~~
