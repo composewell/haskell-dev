@@ -105,10 +105,10 @@ Try to apply the same style to all the items in a sequence. For example,
 do not use this::
 
     f x y 
-        x > y | 
+        | x > y =  
             do something
-        x == y | do something -- should be on the next line
-        otherwise |
+        | x == y = do something -- should be on the next line
+        | otherwise =
             do something
 
 Its preferable to not mix single line and multi-line formats, but
