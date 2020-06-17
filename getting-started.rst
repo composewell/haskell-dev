@@ -903,8 +903,17 @@ You can resolve these errors by:
   in the cabal file of the package, to find the right compiler version
   to use. Try an appropriate version of ``ghc``.
 
-Bugs in cabal
-~~~~~~~~~~~~~
+Bugs
+~~~~
+
+Q: ``ghc-pkg list`` does not show all the packages that cabal can use.
+
+A: Ideally, once we write the ``.ghc.environment`` file, ``ghc-pkg``
+should be able to list all the packages that cabal uses in a
+project. However, ``ghc-pkg`` is not (yet?) aware of the environment
+files and it lists only packages that are directly registered with ``ghc``.
+This would be a minimal set when using latest cabal workflows, cabal does not
+register packages directly with ``ghc`` it uses environment files.
 
 Q: ``cabal`` throws an error like this, even though I have cabal-version as the
 first line::
