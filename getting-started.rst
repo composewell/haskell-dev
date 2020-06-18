@@ -987,12 +987,12 @@ Installing:
 Tool Guides:
 
 * `GHC user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/>`_
-  * `Cabal handy reference <https://www.haskell.org/cabal/users-guide/cabal-projectindex.html>`_
 * `Haskell REPL (GHCi) user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
 * `GHC package management guide <ghc-packages.md>`_
 * `cabal user guide <https://www.haskell.org/cabal/users-guide/>`_
    * `File format and field descriptions <https://www.haskell.org/cabal/users-guide/developing-packages.html>`_
    * `Command line options <https://www.haskell.org/cabal/users-guide/nix-local-build.html>`_
+   * `Cabal handy reference <https://www.haskell.org/cabal/users-guide/cabal-projectindex.html>`_
 
 Package Repositories, Documentation, Search:
 
