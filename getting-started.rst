@@ -670,6 +670,28 @@ symlinks available in your shell ``PATH``.  When you use ``ghcup set``
 to activate a particular ghc version then it just modifies the ``ghc``
 symlink to point to that version.
 
+Using Hoogle search on local package
+------------------------------------
+
+Generate a hoogle input file for generating a hoogle database::
+
+    $ cabal haddock --haddock-hoogle
+    ...
+    ~/streamly/dist-newstyle/build/x86_64-osx/ghc-8.8.3/streamly-0.7.2/doc/html/streamly/streamly.txt
+
+Generate a hoogle database from the directory printed by the command above::
+
+    $ hoogle generate --local=~/streamly/dist-newstyle/build/x86_64-osx/ghc-8.8.3/streamly-0.7.2/doc/html/streamly/
+    $ ls -al ~/.hoogle/*.hoo
+    -rw-r--r--  1 harendra  staff  913433 Jun 18 21:05 /Users/harendra/.hoogle/default-haskell-5.0.17.hoo
+
+Run hoogle server::
+
+    $ hoogle server --local
+
+``--local`` is important to allow following the ``file://`` links. Visit
+``http://127.0.0.1:8080/`` in your browser.
+
 Build times and Space Utilization
 ---------------------------------
 
@@ -803,6 +825,27 @@ Q: Some random weird problem, unexpected behavior when building a project:
 
 A: When all else fails, try ``cabal clean`` or removing the ``dist-newstyle``
 directory.
+
+Q: I am getting these strange messages::
+
+    $ cabal test
+    cabal: Cannot test the package streamly-process-0.1.0.0 because none of the
+    components are available to build: the test suite 'system-process-test' is not
+    available because the solver did not find a plan that included the test
+    suites. Force the solver to enable this for all packages by adding the line
+    'tests: True' to the 'cabal.project.local' file.
+
+    $ cabal test system-process-test
+    cabal: Cannot run the test suite 'system-process-test' because the solver did
+    not find a plan that included the test suites for streamly-process-0.1.0.0. It
+    is probably worth trying again with test suites explicitly enabled in the
+    configuration in the cabal.project{.local} file. This will ask the solver to
+    find a plan with the test suites available. It will either fail with an
+    explanation or find a different plan that uses different versions of some
+    other packages. Use the '--dry-run' flag to see package versions and check
+    that you are happy with the choices.
+
+A: Use ``cabal test --enable-test`` and you will get a better error message.
 
 When Compiling Directly With GHC or using GHCi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -944,6 +987,7 @@ Installing:
 Tool Guides:
 
 * `GHC user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/>`_
+  * `Cabal handy reference <https://www.haskell.org/cabal/users-guide/cabal-projectindex.html>`_
 * `Haskell REPL (GHCi) user guide <https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html>`_ 
 * `GHC package management guide <ghc-packages.md>`_
 * `cabal user guide <https://www.haskell.org/cabal/users-guide/>`_
