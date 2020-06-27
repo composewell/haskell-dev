@@ -513,12 +513,14 @@ dependencies, they only apply to local packages::
 
     $ cabal build --extra-include-dirs=/opt/local/include --extra-lib-dirs=/opt/local/lib 
     
-We can also use environment variables to achieve the same thing.
-This could be useful when you are not in a project context e.g. when
-installing a package using ``cabal install`` or if some other program is
-invoking cabal from inside (e.g. ghc build)::
+GHC uses ``gcc`` or ``clang`` to compile C sources. The header file search
+path and library search path for ``gcc`` and ``clang`` can be specified using
+environment variables.  This could be useful when you are not in a
+project context e.g. when installing a package using ``cabal install``
+or if some other program is invoking cabal from inside::
 
   $ export C_INCLUDE_PATH=/opt/local/include
+  $ export CPLUS_INCLUDE_PATH=/opt/local/include
   $ export LIBRARY_PATH=/opt/local/lib:/usr/lib:/lib
 
 Customizing how dependencies are built
