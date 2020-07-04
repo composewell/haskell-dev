@@ -672,27 +672,65 @@ symlinks available in your shell ``PATH``.  When you use ``ghcup set``
 to activate a particular ghc version then it just modifies the ``ghc``
 symlink to point to that version.
 
-Using Hoogle search on local package
-------------------------------------
+Browsing Documentation: Haddock
+-------------------------------
 
-Generate a hoogle input file for generating a hoogle database::
+HTML documentation for Haskell sources can be automatically generated using
+the ``haddock`` tool. To generate documentation for a package::
+
+    $ cabal haddock
+
+And then open the link displayed by this command in a browser.
+
+Searching Code: Hoogle
+----------------------
+
+Hoogle is a powerful search engine to search and browse the Haskell
+code base. You can search by terms, package names or even by types. We
+can `use it online <https://hoogle.haskell.org/>`_ for all packages on
+Stackage.
+
+Using Hoogle search on a local package
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We can use hoogle on our package by generating a Hoogle database.
+Hoogle depends on the haddock documentation.  When generating haddock
+docs, additionally generate a hoogle file as well::
 
     $ cabal haddock --haddock-hoogle
     ...
     ~/streamly/dist-newstyle/build/x86_64-osx/ghc-8.8.3/streamly-0.7.2/doc/html/streamly/streamly.txt
 
-Generate a hoogle database from the directory printed by the command above::
+Then we can generate a hoogle database from this haddock directory::
 
     $ hoogle generate --local=~/streamly/dist-newstyle/build/x86_64-osx/ghc-8.8.3/streamly-0.7.2/doc/html/streamly/
+
     $ ls -al ~/.hoogle/*.hoo
     -rw-r--r--  1 harendra  staff  913433 Jun 18 21:05 /Users/harendra/.hoogle/default-haskell-5.0.17.hoo
 
-Run hoogle server::
+Bug alert: it appears that hoogle does not follow symbolic links in the
+directory path.
 
-    $ hoogle server --local
+To use the Hoogle database, run ``hoogle server --local -p 8080``.  Then
+visit ``http://127.0.0.1:8080/`` in your browser to search using hoogle.
+``--local`` is important to allow navigation of local ``file://`` URLs.
 
-``--local`` is important to allow following the ``file://`` links. Visit
-``http://127.0.0.1:8080/`` in your browser.
+We can also use the ``hoogle`` command to search directly in the database::
+
+    $ hoogle search id
+    $ hoogle search "a -> a"
+    $ hoogle search --info id
+
+To use hoogle in ``ghci``::
+
+    $ cat ~/.ghc/ghci.conf
+    :def hoogle \s -> return $ ":! hoogle search \"" ++ s ++ "\""
+    :def doc \s -> return $ ":! hoogle search --info \"" ++ s ++ "\""
+
+Then in ``ghci`` use can use::
+
+    :hoogle id
+    :doc id
 
 Build times and Space Utilization
 ---------------------------------
