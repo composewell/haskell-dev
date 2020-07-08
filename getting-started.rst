@@ -953,6 +953,19 @@ following to resolve this:
 3) Use ``ghc -package unordered-containers`` to make it available to ``ghc``
    anyway.
 
+Q: When running ``cabal repl`` I ran into ::
+
+    $ cabal repl
+    Resolving dependencies...
+    TODO: add support for multiple packages in a directory
+    CallStack (from HasCallStack):
+      error, called at ./Distribution/Client/ProjectOrchestration.hs:548:9 in main:Distribution.Client.ProjectOrchestration
+
+Your project may have multiple packages/cabal files. Specify the package, that
+you want to use. For example::
+
+    $ cabal repl streamly
+
 When Installing packages
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
