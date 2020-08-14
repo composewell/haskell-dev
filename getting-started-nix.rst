@@ -654,6 +654,25 @@ A: You may run into such errors if you are installing many different
      building '/nix/store/5jcny4113np1il4yf56kra6iyg6h9aj2-user-environment.drv'...
      created 342 symlinks in user environment
 
+Q: On macOS, getting this error::
+
+    cbits/c_fsevents.m:1:10: error:
+         fatal error: 'CoreServices/CoreServices.h' file not found
+      |
+    1 | #include <CoreServices/CoreServices.h>
+      |          ^
+    #include <CoreServices/CoreServices.h>
+             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    1 error generated.
+    `cc' failed in phase `C Compiler'. (Exit code: 1)
+
+A: The ``CoreServices`` framework is missing::
+
+  $ nix-env -iA nixpkgs.pkgs.darwin.apple_sdk.frameworks.CoreServices
+  installing 'apple-framework-CoreServices'
+  building '/nix/store/04yl425g4lp3ld5xlzv04b7n8zbmzi3y-user-environment.drv'...
+  created 71 symlinks in user environment
+
 Quick References
 ----------------
 
