@@ -597,19 +597,27 @@ A: ``nix-env -S`` is a pretty dumb command, it just replaces
 
   $ ln -s -f /nix/var/nix/profiles/per-user/$USER/profile-2-link/ ~/.nix-profile
 
-Q: Getting ``SSL peer certificate or SSH remote key was not OK (60)`` warning.
+Q: Getting ``SSL peer certificate or SSH remote key was not OK (60)`` error
+   when installing a package.
 
-A: Check if ``nixpkgs.cacert`` package is installed in your current profile::
+A: The easiest solution to this problem is to switch to your default
+  profile which has the ``nixkpkgs.cacert`` package installed, and then
+  run the install command for the profile in which you want to install a
+  package::
 
-    $ nix-env -qaP nss-cacert
-    nixpkgs.cacert  nss-cacert-3.52
-    $ nix-env -iA nixpkgs.cacert
+    $ nix-env -S /nix/var/nix/profiles/per-user/$USER/profile
+    $ nix-env --profile <profile-path> -iA <package>
+
+  If you want to be able to install packages from a profile without switching to
+  the default profile make sure it has ``nixpkgs.cacert`` installed::
+
+    $ nix-env --profile <profile-path> -iA nixpkgs.cacert
 
   If it is installed, check if the environment variable
   ``NIX_SSL_CERT_FILE`` is correctly set::
 
     $ echo $NIX_SSL_CERT_FILE
-    /Users/harendra/.nix-profile/etc/ssl/certs/ca-bundle.crt
+    $HOME/.nix-profile/etc/ssl/certs/ca-bundle.crt
 
   If not then you may want to source your shell profile::
 
@@ -618,7 +626,7 @@ A: Check if ``nixpkgs.cacert`` package is installed in your current profile::
   If that is not correctly setup then you can directly source the nix setup
   script::
 
-    $ source $USER/.nix-profile/etc/profile.d/nix.sh
+    $ source $HOME/.nix-profile/etc/profile.d/nix.sh
 
 Q: How to deal with "packages x and y have the same priority..."? ::
 
