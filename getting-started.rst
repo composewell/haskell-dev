@@ -966,6 +966,16 @@ you want to use. For example::
 
     $ cabal repl streamly
 
+Q: When running ``cabal repl`` I ran into ::
+
+  [84 of 84] Compiling Streamly.Internal.FileSystem.Event.Darwin ( src/Streamly/Internal/FileSystem/Event/Darwin.hs, interpreted )
+  Error: bytecode compiler can't handle some foreign calling conventions
+    Workaround: use -fobject-code, or compile this module to .o separately.
+
+A: As suggested in the error message, use ::
+
+    $ cabal repl --ghc-options -fobject-code streamly
+
 When Installing packages
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
