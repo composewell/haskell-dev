@@ -215,9 +215,28 @@ Multi-line ::
 Imports
 -------
 
-* Import symbols explicitly by names as long as possible. It helps readers in
-  finding out where the symbol is coming from.
-* Import qualified if there are too many symbols to be imported
+* When reading code we want to find out where a symbol is coming
+  from. Import symbols explicitly by names or import the modules qualified
+  as long as possible.
+
+* If the number of symbols imported is too long and we do not want to
+  import qualified, then we have to import all symbols from a module
+  implicitly. To help the reader find out where a symbol may be coming
+  from we place all the implicit imports together as a separate group.
+
+* To add a new symbol or import to existing imports, we need to figure
+  out where to add it, for this case sorting of imports is useful. Placing
+  the qualified imports as a separate group may also help in this.
+
+* Having many import groups makes one think about the groups/grouping
+  scheme every time you have to insert an import, making it difficult to
+  maintain.
+
+Based on the above, we can have:
+
+* Explicit import group
+* qualified import group
+* implicit import group
 
 Single line::
 
@@ -226,25 +245,13 @@ Single line::
 Multi line, list style to avoid rearrangement when adding new items::
 
     import Control.Exception
-        ( assert
+        ( AsyncException
         , Exception
         , SomeException
-        , AsyncException
+        , assert
         , fromException
         , mask_
         )
-
-Group all imports in a single block including qualified or
-unqualified imports, imports from external libraries or local
-internal imports. Having multiple groupings makes one think about the
-groups/grouping scheme every time you have to insert an import, making
-it difficult to maintain.
-
-There is one exception to the above rule, the imports that are not
-qualified and are not importing specific symbols explicitly are placed
-in a separate group, this is to help in figuring out where a symbol
-might be coming from when it is not qualified/explicit. Usually we
-should not have this group.
 
 Variable Naming
 ---------------
