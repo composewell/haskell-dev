@@ -727,6 +727,13 @@ Multi line::
             )
 
     func =
+          S.drain
+        $ encodeLatin1Lax
+        $ S.concatUnfold A.read
+        $ S.concatMapWith parallel use
+        $ S.unfold TCP.acceptOnPort 8090
+
+    func =
         ( S.drain
         $ encodeLatin1Lax
         $ S.concatUnfold A.read
@@ -755,20 +762,21 @@ Multi line in `do` block::
 
     func = do
         putStrLn "do block"
-        ( S.unfold TCP.acceptOnPort 8090
-        & S.concatMapWith parallel use
-        & S.concatUnfold A.read
-        & encodeLatin1Lax
-        & S.drain
-        )
+        S.unfold TCP.acceptOnPort 8090
+            & S.concatMapWith parallel use
+            & S.concatUnfold A.read
+            & encodeLatin1Lax
+            & S.drain
 
 The first line can collapse multiple items in the same line and the last line
 could be a multi line expr::
 
-  return $ Skip $      -- multiple `$` applications in a single line
-      if done
-      then (FromSVarDone sv)
-      else (FromSVarRead sv)
+  do
+      putStrLn "do"
+      return $ Skip $      -- multiple `$` applications in a single line
+          if done
+          then (FromSVarDone sv)
+          else (FromSVarRead sv)
 
   f x =
       g $ h $ \y -> do
@@ -777,12 +785,13 @@ could be a multi line expr::
 
   -- alternatively it can be formatted like a sequence
 
-  ( return
-  $ Skip
-  $ if done
-    then (FromSVarDone sv)
-    else (FromSVarRead sv)
-  )
+  do
+      putStrLn "do"
+      return
+          $ Skip
+          $ if done
+            then (FromSVarDone sv)
+            else (FromSVarRead sv)
 
   f x =
       ( g
