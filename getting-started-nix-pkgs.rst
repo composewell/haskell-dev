@@ -4,12 +4,15 @@ Nix Package Management
 If you are new to nix read the `Nix getting started guide
 <getting-started-nix.rst>`_ first.
 
-Nix is a package manager, you can build, install, use and remove
+Nix is an "immutable" package manager, it can be used to build, install, use and remove
 packages from different sources into the system hosting nix. Before
-building a package, it builds and installs all the necessary
+building a package, it builds and installs all the
 dependencies of the package, if necessary. Moreover, the dependencies of
 one package cannot affect other packages, each package can have its own
-version of the same dependency.
+, potentially different, version of the same dependency.
+
+.. contents:: Table of Contents
+   :depth: 1
 
 Package Management Process
 --------------------------
@@ -18,20 +21,23 @@ Describing the Package
 ~~~~~~~~~~~~~~~~~~~~~~
 
 You can easily build and optionally install your own package with
-nix. To describe a package to nix you need to create a directory and add
-a ``default.nix`` file in it. The key information that ``default.nix``
-contains is how to fetch the sources of the package and how to build
-it. We may optionally need a build script to help build the package.
+nix. We need to create a nix expression file, say ``package.nix``, to
+describe the package.  The key information that this file contains is
+how to fetch the sources of the package and how to build it. We may
+optionally need a build script to help build the package.
 
 Building the Package
 ~~~~~~~~~~~~~~~~~~~~
 
-``nix-build`` takes ``default.nix`` and executes the recipe defined in
-it. It can (optionally) fetch the sources in a temporary directory,
-run the build script, create one or more output directories, and pass the
-paths of those to the build script. The build script would then build
-the package and place the outputs in those directories. The output directory is
-symlinked as ``result`` in the current directory.
+``nix-build package.nix`` executes the recipe defined in
+``package.nix``. It can (optionally) fetch the sources in a temporary
+directory, run the build script, create one or more output directories,
+and pass the paths of those to the build script. The build script would
+then build the package and place the outputs in those directories. The
+output directory is symlinked as ``result`` in the current directory.
+
+Note: ``nix-build`` without any arguments works on ``default.nix`` in the
+current directory.
 
 Installing the Package
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -44,7 +50,7 @@ libraries available in the current nix profile via ``~/.nix-profile``.
 A Trivial Package
 -----------------
 
-``default.nix`` defines a nix expression to describe the package and how
+The nix expression file defines a nix expression to describe the package and how
 to build it.  The nix expression defines a build function that may take
 some inputs and produce some outputs. The build function is also called
 a derivation, as it derives output artifacts using some input artifacts.
@@ -97,8 +103,9 @@ Let's build this package using ``nix-build``::
   TMPDIR=/private/var/folders/p4/fdt36vy95f52t_3dnpcx8_340000gn/T/nix-build-dummy.drv-0
   ...
 
-In addition, nix also passes the attributes in the argument set of
-``derivation`` as environment variables with the same names::
+In addition to the environment variables above, nix also passes the
+attributes used in ``derivation``'s argument set as environment
+variables with the same names::
 
   ...
   name=dummy
@@ -154,6 +161,8 @@ We can open this file and see all the details of this derivation.
 An Example Package
 ------------------
 
+XXX: we can possibly remove the function argument syntax from this??
+
 Let's now try to build a small real Haskell source package. `packcheck
 <http://hackage.haskell.org/package/packcheck>`_ is a minimal Haskell
 package that contains a shell script ``packcheck.sh`` which can build
@@ -202,15 +211,22 @@ any Haskell package. We will use that script to build ``packcheck`` itself::
 
 ``with`` is a nix language keyword. ``import``, ``fetchurl`` and
 ``derivation`` are nix builtin functions. We can use them with or without
-``builtins.`` prefix e.g. ``builtins.import`` or just ``import``.
+``builtins.`` prefix e.g. we can use ``builtins.import`` or just ``import``.
 
 ``<nixpkgs>`` is a syntax to refer to the first nix module (better known
-as nix expression) by the name ``nixpkgs`` found in ``NIX_PATH``. If you
+as nix expression) named ``nixpkgs`` found in ``NIX_PATH``. If you
 are familiar with the ``C`` language then this is similar to the ``include
-<stdio.h>`` syntax. 
+<stdio.h>`` syntax.
 
-``with import <nixpkgs> {};`` brings all the child modules of
-``nixpkgs`` into the current scope. For example, the package
+The builtin function ``import`` brings in the result of a nix expression
+in the current scope. For example, to bring in the ``nixpkgs`` set and
+refer to it by the name ``nixpkgs`` we can use::
+
+  let nixpkgs = import <nixpkgs> {};
+  in nixpkgs.dockerTools.buildImage { ... }
+
+``with import <nixpkgs> {};`` brings all the members of the set imported
+by ``import <nixpkgs> {}`` into the current scope. For example, the package
 ``nixpkgs.ghc`` comes into the current scope as the name ``ghc`` and we
 can refer to it using ``${ghc}``.
 
@@ -253,7 +269,7 @@ variables we should pass them as arguments, as follows::
   , llvmPackages, ghc, cabal-install }:
   ...
 
-Then we can call the function in ``packcheck.nix`` supplying the
+Then we can call the function defined in ``packcheck.nix`` supplying the
 arguments using ``nix-build`` as follows::
 
     $ nix-build -E 'with import <nixpkgs> {}; nixpkgs.pkgs.callPackage ./packcheck.nix {}'
@@ -315,7 +331,7 @@ Expand an expression in a string::
 
     let expr = "world" in "hello ${expr}"
 
-Paths (at least one "/" is needed)::
+Paths (at least one "/" is needed to deem it as a path type)::
 
     ./.       # current directory
     /.        # root directory
@@ -381,7 +397,7 @@ Inherit: In a set or in a let-expression definitions can be inherited::
 ``inherit x`` implies ``x = x``
 ``inherit (pkgs) zlib`` implies ``zlib = pkgs.zlib``
 
-Aninymous functions are defined as ``pattern: body``::
+Anonymous functions are defined as ``pattern: body``::
 
     # single argument function
     x: !x # negation function
@@ -423,7 +439,7 @@ Assertions::
 
     assert e1; e2
 
-with::
+with:
 
 ``with set; expr``: introduces the set ``set`` into the lexical scope of
 ``the expression expr``::
