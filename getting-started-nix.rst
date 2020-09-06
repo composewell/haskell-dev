@@ -1,6 +1,9 @@
 Getting Started with Nix
 ========================
 
+.. contents:: Table of Contents
+   :depth: 1
+
 What is Nix?
 ------------
 
