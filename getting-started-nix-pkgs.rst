@@ -1,12 +1,12 @@
-Nix Package Management
+Nix Package Derivation
 ======================
 
 If you are new to nix read the `Nix getting started guide
 <getting-started-nix.rst>`_ first.
 
-Nix is an "immutable" package manager, it can be used to build, install, use and remove
-packages from different sources into the system hosting nix. Before
-building a package, it builds and installs all the
+Nix is an "immutable" package manager, it can be used to build,
+install, use and remove packages from different sources into the system
+hosting nix. Before building a package, it builds and installs all the
 dependencies of the package, if necessary. Moreover, the dependencies of
 one package cannot affect other packages, each package can have its own
 , potentially different, version of the same dependency.
@@ -14,78 +14,178 @@ one package cannot affect other packages, each package can have its own
 .. contents:: Table of Contents
    :depth: 1
 
-Package Management Process
---------------------------
+See `Nix Reference <getting-started-nix-reference.rst>`_ for nix
+expression language and builtin functions.
 
-Describing the Package
-~~~~~~~~~~~~~~~~~~~~~~
+Derivation Process
+------------------
 
-You can easily build and optionally install your own package with
-nix. We need to create a nix expression file, say ``package.nix``, to
-describe the package.  The key information that this file contains is
-how to fetch the sources of the package and how to build it. We may
-optionally need a build script to help build the package.
+Packages in nix are self contained directory trees in nix store. These
+directory trees are derived from source recipes that define the sources,
+dependencies, environment, tools and the build process. The resulting
+output artifacts are stored in a directory tree in the nix store. We
+will call this directory tree a "derived object" and this process of
+building it "derivation".
 
-Building the Package
-~~~~~~~~~~~~~~~~~~~~
+The directory name of a derived object contains a hash of all the
+inputs, environment, tools and anything that is used in the build
+process. If we are trying to build an object we first generate the key
+of the object from its inputs and see if it is already present in the
+store, and use that if it is present, otherwise build it from source.
 
-``nix-build package.nix`` executes the recipe defined in
-``package.nix``. It can (optionally) fetch the sources in a temporary
-directory, run the build script, create one or more output directories,
-and pass the paths of those to the build script. The build script would
-then build the package and place the outputs in those directories. The
-output directory is symlinked as ``result`` in the current directory.
+Let's now go through the basics of defining and building a derived
+object using a nix expression. We generalize the term "package" to
+"derived object" or "derivation". The term "derivation" can also used to
+refer to the process or the recipe used to build the object.
 
-Note: ``nix-build`` without any arguments works on ``default.nix`` in the
-current directory.
+Describing a Derived Object
+---------------------------
 
-Installing the Package
-~~~~~~~~~~~~~~~~~~~~~~
+A derived object is described by a nix expression, usually in a
+file, say ``package.nix``. The primitive nix operation to create a
+derivation recipe is ``derivationStrict``. ``derivation`` and
+``nixpkgs.stdenv.mkDerivation`` are higher level wrappers around this
+primitive.::
 
-If we hook our package into the nix package hierarchy, we can use
-``nix-env`` to install the package. It would do what ``nix-build`` does
-but instead of creating a ``result`` symlink it makes the executables or
-libraries available in the current nix profile via ``~/.nix-profile``.
+  nix-repl> derivationStrict { system = "x86_64-darwin"; name = "dummy"; builder = "/usr/bin/env"; }
+  { drvPath = "/nix/store/xs4l5mv0rfzidxh4d5pigka2nsjpdy1r-dummy.drv"; out = "/nix/store/2869jzplqdaipayhij966s3c5lxv83l3-dummy"; }
 
-A Trivial Package
------------------
+The key information that a derivation requires is the name of the derived
+object and how to build it.
 
-The nix expression file defines a nix expression to describe the package and how
-to build it.  The nix expression defines a build function that may take
-some inputs and produce some outputs. The build function is also called
-a derivation, as it derives output artifacts using some input artifacts.
+Let's write a simple example using ``derivation`` and see how it works::
 
-Let's create a trivial package first::
+  $ cat > package.nix
+  derivation {
+      system = "x86_64-darwin";
+      name = "dummy";
+      builder = "/usr/bin/env";
+      src = ./.;
+  }
 
-  $ mkdir nix-trivial
-  $ cd nix-trivial
-  $ cat > default.nix
-  {}:
-    derivation {
-        name = "dummy";
-        system = "x86_64-darwin";
-        builder = "/usr/bin/env";
-        src = ./.;
+The expression in ``package.nix`` calls ``derivation`` with a ``set``
+type argument (a set of key value pairs) describing the derivation. It
+says our package is called ``dummy`` and its source is in ``./.``
+i.e. the current directory and it is built using the ``/usr/bin/env``
+program.
+
+``/usr/bin/env`` does nothing, it just prints its environment
+variables. We have chosen this just to illustrate the environment
+that nix uses to call the builder, which is important to write a real
+builder.
+
+Evaluating the Recipe
+~~~~~~~~~~~~~~~~~~~~~
+
+``nix-instantiate`` and ``nix-store`` are low level commands to build a
+derived object. ``nix-build`` is a high level command to build derived
+objects. It is built on top of the former two.
+
+A nix expression that evaluates to a derivation, list of derivations or
+a set of derivations at the top level can be used by ``nix-instantiate``
+to "realize" those derivations. In other words, the expression must use an
+outermost operation that translates to ``derivationStrict`` ultimately.
+
+Let's evaluate our trivial example::
+
+    $ nix-instantiate --eval package.nix
+    { system = "x86_64-darwin";
+      name = "dummy";
+      src = /Users/harendra/tmp;
+      builder = "/usr/bin/env";
+
+      type = "derivation";
+      drvAttrs = { builder = "/usr/bin/env"; name = "dummy"; src = /Users/harendra/tmp; system = "x86_64-darwin"; };
+      outputName = "out";
+      drvPath = <CODE>;
+      outPath = <CODE>;
+      all = <CODE>;
+      out = ... ;
     }
 
-This file defines a function with no arguments. A function in nix is
-defined as ``{ arg1, arg2, ..., argn }: expr`` where ``arg1``, ``arg2``,
-and ``argn`` are arguments to the function and ``expr`` is the body of
-the function.
+``--eval`` partially evaluated the derivation to a set. The set contains the
+attributes that we specified and some more. Note that the path ``./.`` got
+translated to an absolute path. Now let's evaluate it more using the
+``--strict`` option::
 
-Our function body calls another function ``derivation`` with a
-``set`` type argument (a set of key value pairs) describing the
-package. Our ``dummy`` package is built using the ``/usr/bin/env``
-program. ``/usr/bin/env`` does nothing, it just prints its environment
-variables. We have chosen this just to illustrate the environment that
-nix uses to call the builder, which is important to write a real builder.
+    $ nix-instantiate --eval --strict package.nix
+    { ...
+      drvPath = "/nix/store/qg1q1hk3rb7ci8fq3ldkhgqvqfnmnal8-dummy.drv";
+      outPath = "/nix/store/n8k5fdcgv52qqk64sz2nv8azqrfili8z-dummy";
+      all = [ out ];
+      out = <SELF>;
+      ...
+    }
 
-Environment of the builder
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+It got fully evaluated now, the store paths of the derivation
+``drvPath`` and ``outPath`` are generated using a unique hash based on the
+build environment. ``out`` refers to the result of this derivation and
+``all`` is a list of all outputs of the derivation which is just ``out``
+in this case.
 
-Let's build this package using ``nix-build``::
+Building the Derivation Spec
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  $ nix-build
+Let's actually generate the derivation spec now::
+
+  $ nix-instantiate package.nix 
+  /nix/store/qg1q1hk3rb7ci8fq3ldkhgqvqfnmnal8-dummy.drv
+
+Let's open ``/nix/store/qg1q1hk3rb7ci8fq3ldkhgqvqfnmnal8-dummy.drv`` and see::
+
+  Derive
+    ( [("out","/nix/store/n8k5fdcgv52qqk64sz2nv8azqrfili8z-dummy","","")]
+    , []
+    , ["/nix/store/9q6a8fnsqpvgp4czvby4q9pncmc88v67-tmp"]
+    , "x86_64-darwin"
+    , "/usr/bin/env"
+    , []
+    , [ ("builder","/usr/bin/env")
+      , ("name","dummy")
+      , ("out","/nix/store/n8k5fdcgv52qqk64sz2nv8azqrfili8z-dummy")
+      , ("src","/nix/store/9q6a8fnsqpvgp4czvby4q9pncmc88v67-tmp")
+      , ("system","x86_64-darwin")
+      ]
+    )
+
+Everything that the final derived object depends on has to be in the nix store,
+therefore, our source directory ``./.`` has been copied to
+``/nix/store/9q6a8fnsqpvgp4czvby4q9pncmc88v67-tmp`` in the store, this
+path is also passed to the builder as ``src`` environment variable.
+
+The list at the end contains the environment variables that will be passed as
+environment of the builder when it is invoked. We can use the following command
+to print the environment::
+
+    $ nix-store --print-env /nix/store/qg1q1hk3rb7ci8fq3ldkhgqvqfnmnal8-dummy.drv
+
+Local Path Translation
+~~~~~~~~~~~~~~~~~~~~~~
+
+An important thing to note is that we have an attribute ``src =
+./.`` referring to the current directory path. Any path type attribute
+referring to a local path causes the file or the directory tree to
+be copied to the store and its location in the store is put in the
+environment variable::
+
+  src=/nix/store/9q6a8fnsqpvgp4czvby4q9pncmc88v67-tmp
+
+Also, note that the permissions of the tree are made read-only and the
+timestamps are set to 01-Jan-1970.
+
+We can access any artifacts in our current directory by using the above
+translated path.
+
+Building the Derivation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+``nix-instantiate`` only created the derivation spec object and copied
+the source to nix store. The output object does not exist yet. Let's
+try creating it from the derivation spec.  Our builder does nothing but
+prints its environment::
+
+  $ nix-store --realise /nix/store/qg1q1hk3rb7ci8fq3ldkhgqvqfnmnal8-dummy.drv
+
   ...
   NIX_BUILD_CORES=8
   NIX_LOG_FD=2
@@ -104,7 +204,7 @@ Let's build this package using ``nix-build``::
   ...
 
 In addition to the environment variables above, nix also passes the
-attributes used in ``derivation``'s argument set as environment
+attributes used in ``derivation``'s argument set - as environment
 variables with the same names::
 
   ...
@@ -117,7 +217,7 @@ Lastly, it passes a default ``out`` environment variable pointing to a
 directory where the builder is supposed to store its output artificats::
 
   ...
-  out=/nix/store/2869jzplqdaipayhij966s3c5lxv83l3-dummy
+  out=/nix/store/n8k5fdcgv52qqk64sz2nv8azqrfili8z-dummy
   ...
 
 Notice that nix cleans the environment before invoking the builder
@@ -129,34 +229,19 @@ illustration, but we are not supposed to use any path outside the nix
 sandbox for building, we must have explicit dependencies on other nix
 packages and use the paths of those.
 
-Local Path Translation
-~~~~~~~~~~~~~~~~~~~~~~
+Building with Nix Build
+~~~~~~~~~~~~~~~~~~~~~~~
 
-Another important thing to note is that we have an attribute ``src =
-./.`` referring to the current directory path. Any path type attribute
-referring to a local path causes the file or the directory tree to
-be copied to the store and its location in the store is put in the
-environment variable::
+Instead of using the low level commands, we can just use ``nix-build`` to
+perform the above steps in one go::
 
-  src=/nix/store/cxs2idim7nrlxn100c7nk0s91pr17csm-nix-trivial
+    $ nix-build package.nix
 
-Also, note that the permissions of the tree are made read-only and the
-timestamps are set to 01-Jan-1970.
+The output directory ``$out`` is symlinked as ``result`` in the current
+directory.
 
-We can access any artifacts in our current directory by using the above
-translated path.
-
-Derivation Spec
-~~~~~~~~~~~~~~~
-
-``nix-build`` first creates a spec for the derivation which is stored in the
-nix store::
-
-  these derivations will be built:
-    /nix/store/fyfjlgp5xzkdhkzp32hvcbxdijaimkxq-packcheck-0.5.1.drv
-  building '/nix/store/fyfjlgp5xzkdhkzp32hvcbxdijaimkxq-packcheck-0.5.1.drv'...
-
-We can open this file and see all the details of this derivation.
+Note: ``nix-build`` without any arguments works on ``default.nix`` in the
+current directory.
 
 An Example Package
 ------------------
@@ -213,10 +298,12 @@ any Haskell package. We will use that script to build ``packcheck`` itself::
 ``derivation`` are nix builtin functions. We can use them with or without
 ``builtins.`` prefix e.g. we can use ``builtins.import`` or just ``import``.
 
-``<nixpkgs>`` is a syntax to refer to the first nix module (better known
-as nix expression) named ``nixpkgs`` found in ``NIX_PATH``. If you
-are familiar with the ``C`` language then this is similar to the ``include
-<stdio.h>`` syntax.
+``<nixpkgs>`` is a syntax that is used to refer to the first nix module
+(better known as nix expression) named ``nixpkgs`` found in
+``NIX_PATH``.  By default it would be the nix expression in
+``$HOME/.nix-defexpr/channels/nixpkgs``. The evaluation of this
+expressions returns a set named ``nixpkgs``. ``nixpkgs.*`` in the code
+is just accessing members of this set.
 
 The builtin function ``import`` brings in the result of a nix expression
 in the current scope. For example, to bring in the ``nixpkgs`` set and
@@ -242,19 +329,6 @@ untars the source tarball, changes directory to the source and then
 invokes its build script ``packcheck.sh`` to build the package. Finally,
 it creates a dummy ``hello`` artifact inside the output directory passed
 by nix.
-
-Build output
-~~~~~~~~~~~~
-
-We can run ``nix-build`` to build our package::
-
-    $ nix-build
-
-It creates a ``result`` symlink which points to the output directory that was
-passed to the build script as the ``out`` environment variable::
-
-    $ ls -al result
-    lrwxr-xr-x  1 harendra  wheel  59 Jun 15 20:23 result -> /nix/store/i1ki0dh1fgd1rcs0ljbzak6ilmymzldp-packcheck-0.5.1
 
 callPackage
 ~~~~~~~~~~~
@@ -289,336 +363,212 @@ We can write this expression in ``default.nix`` so that we can use
       nixpkgs.pkgs.callPackage ./packcheck.nix {}
   $ nix-build
 
-Adding to Nix Packages
+Installing the package
 ~~~~~~~~~~~~~~~~~~~~~~
 
-TBD
+::
 
-That's it. The rest of this guide contains reference material to
-understand the Nix expression language and library functions. You
-are now equipped with all the basic knowledge of Nix and Nix
-packaging, you can now move on to the `Nix Haskell Guide
-<getting-started-nix-haskell.rst>`_.
+    $ nix-env -i ./result
 
-Nix Expression Language
------------------------
+Creating a user environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can use ``nix repl`` to try out the language interactively.
+We now know how to build a derived object from a recipe using
+``nix-build``.  The derived object output from ``nix-build`` is stored
+in the nix store and a ``result`` link to the object is made available
+in the current directory or as specified on the command line.
 
-Comments::
+We can go further and also create a user environment for the object and
+link its artifacts from a user profile, making the artifacts available
+for general use.
 
-    # this is a comment
-    /* this is a comment */
+A user environment is a collection of derived objects linked into a standard
+file system hierarchy under one root. ``.nix-profile`` is a user environment.
 
-Strings::
+::
 
-    "hello world"
-    'hello world'
+  $ cat myprofile.nix
+  let nixpkgs = import <nixpkgs> {};
+  in nixpkgs.buildEnv {
+        name = "my-packages";
+        paths = [ nixpkgs.pkgs.bc nixpkgs.pkgs.coreutils ];
+        pathsToLink = [ "/share" "/bin" ];
+        extraOutputsToInstall = [ "man" "doc" ];
+     }
 
-Indented Strings::
+It would create a derived object ``my-packages`` containing ``/share``,
+``/bin`` directories of the ``bc`` and ``coreutils`` packages.
 
-  ''
-    This is the first line.
-    This is the second line.
-      This is the third line.
-  ''
+The ``nix-env`` command creates new user environments whenever we install or
+uninstall packages.
 
-URI Strings can be written without quotes::
+Build functions and derivations
+-------------------------------
 
-    http://hello.world
+See `Nix Reference <getting-started-nix-reference.rst>`_ for nix
+expression language and builtin functions.
 
-Expand an expression in a string::
+The set ``nixpkgs`` consists of a lot of nix functions/builders in
+addition to package derivations. These functions can be used in various
+custom derivations.  See the reference guide mentioned above for
+some common ones. For an authoritative source of all functions see
+``$HOME/.nix-defexpr/channels/nixpkgs``.
 
-    let expr = "world" in "hello ${expr}"
-
-Paths (at least one "/" is needed to deem it as a path type)::
-
-    ./.       # current directory
-    /.        # root directory
-    a/b
-    ~/a       # expand ~ to home directory
-    <nixpkgs> # search nixpkgs in NIX_PATH
-
-Booleans: ``true``, ``false``
-Null : ``null``
-
-Define local variables::
-
-  let
-    x = "foo";
-    y = "bar";
-  in x + y
-
-Lists: whitespace separated items in square brackets::
-
-    [ 123 ./foo.nix "abc" (f { x = y; }) ]
-
-Adding lists::
-
-    [ 1 2 ] ++ [ 3 4 ]
-
-Sets: name value pairs (attributes), terminated by ``;`` and enclosed in
-curly brackets::
-
-  { x = 123;
-    text = "Hello";
-    y = f { bla = 456; };
-  }
-
-Attributes can be selected from a set using the ``.`` operator.  Default
-value in an attribute selection can be provided using the ``or``
-keyword. For example::
-
-  { a = "Foo"; b = "Bar"; }.c or "Xyzzy"
-
-A set that has a ``__functor`` attribute whose value is callable (i.e. is
-itself a function or a set with a __functor attribute whose value is
-callable) can be applied as if it were a function, with the set itself
-passed in first::
-
-  let add = { __functor = self: x: x + self.x; };
-      inc = add // { x = 1; };
-  in inc 1
-
-Inherit: In a set or in a let-expression definitions can be inherited::
-
-  let x = 123; in
-  { x = x;
-    y = 456;
-  }
-
-  is equivalent to
-
-  let x = 123; in
-  { inherit x;
-    y = 456;
-  }
-
-``inherit x`` implies ``x = x``
-``inherit (pkgs) zlib`` implies ``zlib = pkgs.zlib``
-
-Anonymous functions are defined as ``pattern: body``::
-
-    # single argument function
-    x: !x # negation function
-
-    # set argument
-    { x, y, z }: x + y + z
-
-    # optional arguments with default values
-    { x, y ? "foo", z ? "bar" }: x + y + z
-
-    # @pattern, in the following examples "args" variable holds the
-    # whole argument set
-    args@{ x, y, z, ... }: x + y + z + args.a
-    { x, y, z, ... } @ args: x + y + z + args.a
-
-Named functions are just let bindings for anonymous functions::
-
-    let f = x: !x
-        g = {x , y, z}: x + y + z
-
-Calling a function::
-
-    # single argument
-    f "foo"
-
-    # set argument
-    f {x = "foo"; y = "bar"; z = "baz";}
-
-First class functions (functions returning functions)::
-
-    let concat = x: y: x + y; # function returning a function
-    in builtins.map (concat "foo") [ "bar" "bla" "abc" ] # Currying
-
-Conditionals::
-
-    if e1 then e2 else e3
-
-Assertions::
-
-    assert e1; e2
-
-with:
-
-``with set; expr``: introduces the set ``set`` into the lexical scope of
-``the expression expr``::
-
-  let as = { x = "foo"; y = "bar"; };
-  in with as; x + y
-
-  with (import ./definitions.nix); ...
-
-It can also be written as::
-
-  with import ./definitions.nix; ...
-
-Function application: In the expression::
-
-  with import <nixpkgs> {};
-
-``with import`` returns a function which consumes the next argument, which
-returns a function which consumes the next argument.
-
-Built-in functions
-------------------
-
-Nix provides `a library of built-in functions
-<https://nixos.org/nix/manual/#ssec-builtins>`_. All built-in functions are
-available through the ``builtins.`` namespace prefix. Some common functions
-are available even without that prefix.
-
-``builtins.import path`` Load, parse and return the Nix expression in
-the file ``path``. If ``path`` is a directory, the file ``default.nix``
-in that directory is loaded.
-
-Derivation
-----------
-
-`builtins.derivation <https://nixos.org/nix/manual/#ssec-derivation>`_ is a
-function to build a package::
-
-    derivation {
-        name    # package name
-        system  # e.g. "i686-linux" or "x86_64-darwin"
-        builder # build script, a derivation or a path e.g. ./builder.sh
-        args ? []    # command line args to be passed to the builder
-        outputs ? [] # a list of symbolic outputs of the derivation
-                     # e.g.  [ "lib" "headers" "doc" ]
-    }
-
-Builder Environment and Execution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Debugging Note: We can use ``/usr/bin/env`` as the builder script to print the
-environment that is being passed to the builder.
-
-Every attribute of ``derivation`` is passed as an environment variable
-to the builder process with the following translations:
-
-* A path (e.g., ../foo/sources.tar) type attribute causes the referenced
-  file to be copied to the store; its location in the store is put in the
-  environment variable.
-
-  The tree copied in the nix store is made read-only. If the builder depends on
-  the ability to write to this tree in-place then it has to make it writable
-  explicitly. Or it has to copy the tree to the temporary directory.
-
-  The copied tree in the nix store has timestamps as 01-Jan-1970, the
-  beginning of the Unix epoch. So you cannot depend on the timestamps.
-* A derivation type attribute causes that derivation to be built prior
-  to the present derivation; its default output path is put in the
-  environment variable.
-* ``true`` is passed as the string ``1``, ``false`` and ``null`` are
-  passed as an empty string.
-* By default, a derivation produces a single output path, denoted
-  as ``out``. ``outputs = [ "lib" "headers" "doc" ]`` causes ``lib``,
-  ``headers`` and ``doc`` to be passed to the builder containing
-  the intended nix store paths of each output.  Each output path
-  is a directory in nix store whose name is a concatenation of the
-  cryptographic hash of all build inputs, the name attribute and the
-  output name. The output directories are created before the build
-  starts, environment variables for each output name are passed to the
-  build script.  The build script stores its output artifacts at those
-  paths.
-
-Other environment variables:
-
-* ``NIX_BUILD_TOP``: path of the temporary directory for this build.
-* ``NIX_STORE``: the top-level Nix store directory (typically, /nix/store).
-
-These are set to prevent issues when they are not set:
-
-* ``TMPDIR``, ``TEMPDIR``, ``TMP``, ``TEMP``=``$NIX_BUILD_TOP``
-* ``PATH=/path-not-set``
-* ``HOME=/homeless-shelter``
-
-The builder is executed as follows:
-
-* cd $TMPDIR/<tmp dir>/
-* Clear the environment and set to the attributes as above
-* If an output path already exists, it is removed
-* The builder is executed with the arguments specified by the attribute args.
-* If the builder exits with exit code 0, it is considered to have succeeded.
-* A log of standard output and error is written to ``/nix/var/log/nix``
-
-Post build:
-
-* The temporary directory is removed (unless the -K option was specified).
-* If the build was successful, Nix scans each output path for references
-  to input paths by looking for the hash parts of the input paths. Since
-  these are potential runtime dependencies, Nix registers them as
-  dependencies of the output paths.
-
-stdenv and lib
-~~~~~~~~~~~~~~
-
-Attribute path ``nixpkgs.lib`` contains `a library of functions
-<https://nixos.org/nixpkgs/manual/#chap-functions>`_ to help in
-writing package definitions.  Attribute path `nixpkgs.stdenv
-<https://nixos.org/nixpkgs/manual/#chap-stdenv>`_ contains a nix package that
-provides a standard build environment including gcc, GNU coreutils, GNU
-findutils and other basic tools::
-
-    $ nix-env -qaP -A nixpkgs.stdenv
-    nixpkgs.stdenv  stdenv-darwin
-
-mkDerivation
-~~~~~~~~~~~~
-
-``stdenv`` provides a wrapper around `builtins.derivation
-<https://nixos.org/nix/manual/#ssec-derivation>`_
-called `stdenv.mkDerivation
-<https://nixos.org/nixpkgs/manual/#sec-using-stdenv>`_.
-It adds a default value for ``system`` and always uses ``bash`` as the
-``builder``, to which the supplied builder is passed as a command-line
-argument::
-
-  stdenv.mkDerivation {
-    name    # name of the package, if pname and version are specified this is
-            # automatically set to "${pname}-${version}"
-    pname   # package name
-    version # package version
-    src     # source directory containing the package source
-    builder ? # use your own builder script instead of genericBuild
-    buildInputs ? # dependencies e.g. [libbar perl ncurses]
-    buildPhase ? # build phase script
-    installPhase ? # install phase script
-    ...
-  }
-
-Environment of the builder: In addition to the environment provided by
-``derivation``:
-
-* ``stdenv`` contains the path to ``stdenv`` package. The shell script ``$stdenv/setup`` is
-  typically sourced by the builder script to setup the ``stdenv`` environment.
-* ``buildInputs`` attribute ensures that the bin subdirectories of these
-  packages appear in the ``PATH`` environment variable during the build,
-  that their include subdirectories are searched by the C compiler, and so
-  on.
-
-Builder script execution:
-
-* If ``builder`` is not set, then the ``genericBuild`` function from
-  ``$stdenv/setup`` is called as build script. ``buildPhase``, ``installPhase``
-  customizations in ``mkDerivation`` are used by ``genericBuild`` allowing
-  customization of its behavior. `See the manual
-  <https://nixos.org/nixpkgs/manual/#sec-stdenv-phases>`_ to check out
-  more details about the build phases.
-* If ``builder`` is set then the specified builder script is invoked with
-  ``bash``. You can source ``$stdenv/setup`` in the script. You can still
-  define ``buildPhase``, ``installPhase`` etc as shell functions and then
-  invoke ``genericBuild`` in your script.
-
-To checkout the shell functions and environments available in ``$stdenv/setup``
-install ``stdenv`` and visit its store path.
-The source of ``mkDerivation`` can be found in
-``$HOME/.nix-defexpr/channels/nixpkgs/pkgs/stdenv/generic/make-derivation.nix``.
-
-Quick References
+Nix distribution
 ----------------
 
-* https://nixos.wiki/wiki/Nix_Expression_Language
-* https://nixcloud.io/tour/ A tour of Nix (language)
-* https://medium.com/@MrJamesFisher/nix-by-example-a0063a1a4c55 Nix by example
-* https://nix.dev/anti-patterns/language.html
+`Nix getting started guide <getting-started-nix.rst>`_ describes how the
+nix distribution works. The whole distribution or collection of packages
+visible to nix commands are defined by the nix expression obtained by
+evaluating ``$HOME/.nix-defexpr``. Packages derived from this source are
+fetched, built and stored in the nix store. When packages are available in the
+binary cache they are downloaded from the cache.
+
+Nix User Config
+~~~~~~~~~~~~~~~
+
+XXX todo: move the distracting parts out in a let caluse. Explain those in
+separate sections before the config example.
+
+We can modify the source nix expression defining the nix distribution by using
+the nix configuration file ``~/.config/nixpkgs/config.nix``. That way we
+can change or override the packages visible to the system, and add our
+own packages to it::
+
+  {
+    allowUnfree = true;
+    allowUnfreePredicate =
+        pkg: builtins.elem (lib.getName pkg) [ "flashplayer" "vscode" ];
+    allowBroken = true;
+    allowUnsupportedSystem = true;
+    whitelistedLicenses = with stdenv.lib.licenses; [ amd wtfpl ];
+    blacklistedLicenses = with stdenv.lib.licenses; [ agpl3 gpl3 ];
+    allowInsecurePredicate = pkg: builtins.stringLength (lib.getName pkg) <= 5;
+    # Checked only if allowInsecurePredicate is not defined
+    permittedInsecurePackages =
+        [
+            "hello-1.2.3"
+        ];
+    # takes all available pkgs as an argument and returns a modified set
+    # of packages.
+    packageOverrides = pkgs:
+        with pkgs;
+        {
+            # Write a shell script in nix store to setup paths
+            # This is an example, you may not need this as this may already be
+            # setup by nix.sh.
+            myProfile =
+                writeText "my-profile"
+                    ''
+                    export PATH=$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH
+                    export MANPATH=$HOME/.nix-profile/share/man:/nix/var/nix/profiles/default/share/man:$MANPATH
+                    export INFOPATH=$HOME/.nix-profile/share/info:/nix/var/nix/profiles/default/share/info:$INFOPATH
+                    '';
+            # define a custom package bundle
+            myBundle = pkgs.buildEnv {
+                name = "my-packages";
+                paths = [
+                  bc
+                  coreutils
+                  gdb
+                  texinfoInteractive # for install-info command
+
+                  # copy our shell script to user profile i.e. $out
+                  (runCommand "profile" {}
+                      ''
+                      mkdir -p $out/etc/profile.d
+                      cp ${myProfile} $out/etc/profile.d/my-profile.sh
+                      ''
+                  )
+                ];
+            pathsToLink = [ "/share" "/bin" ];
+            extraOutputsToInstall = [ "man" "doc" ];
+
+            # Copy info files to the info root node i.e. $out/share/info/dir
+            postBuild =
+                ''
+                if [ -x $out/bin/install-info -a -w $out/share/info ]
+                then
+                  shopt -s nullglob
+                  for i in $out/share/info/*.info $out/share/info/*.info.gz
+                  do
+                      $out/bin/install-info $i $out/share/info/dir
+                  done
+                fi
+                '';
+            };
+        };
+  }
+
+See ``~/.nix-defexpr/channels/nixpkgslib/licenses.nix`` for a complete
+list of licenses.
+
+Environment variables::
+
+  $ export NIXPKGS_ALLOW_BROKEN=1
+  $ export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
+  $ export NIXPKGS_ALLOW_UNFREE=1
+  $ export NIXPKGS_ALLOW_INSECURE=1
+
+Overlays
+~~~~~~~~
+
+Overrides
+~~~~~~~~~
+
+* https://nixos.org/guides/nix-pills/override-design-pattern.html
+* https://nixos.org/guides/nix-pills/nixpkgs-overriding-packages.html
+
+Nix Global Data
+~~~~~~~~~~~~~~~
+
+The whole nix distribution consists of ``/nix/var`` and ``/nix/store``.
+
+The ``/nix/var`` directory contains top level control information about the
+whole nix installation. ``/nix/var/nix`` contains:
+
+* ``profiles`` - default user profiles, the top level point from where a user
+  accesses the distribution.
+* ``gcroots`` - derivations reachable from this are not removed
+* ``userpool``
+* a sqlite database (what does it have?)
+
+Nix Store
+~~~~~~~~~
+
+Nix store consists of directories that may contain a self-contained
+package or a derivation (.drv suffix). Each such package may depend on
+other packages installed in the store. The whole tree is rooted at user
+profiles. Each path in the store is a tree consisting of a package and
+its dependencies.
+
+The ``nix-store`` command can be used to manipulate the contents of the
+nix store. See ``nix-store --help``.
+
+Subtree/path level
+* ``nix-store --query`` - query info about a path
+* ``nix-store --print-env`` - environment of a .drv path
+* ``nix-store --read-log`` - print build log of a path
+
+* ``nix-store --verify-path/repair-path`` - verify/repair a path
+* ``nix-store --realise`` - make sure the given store path tree is complete and
+  valid, if not fetch it or build it.
+
+* ``nix-store --add`` - add a path to nix-store
+* ``nix-store --dump/restore`` - dump/restore a path tree as nix archive (tar)
+* ``nix-store --export/import`` - export/import an archive for non nix-store purposes
+* ``nix-store --dumpdb/load-db`` - dump nix db for the path tree
+
+* ``nix-store --delete`` - delete if nobody is using it
+
+Store level:
+* ``nix-store --serve`` -  provide access to the whole store over stdin/stdout
+* ``nix-store --gc`` - garbage collect
+* ``nix-store --verify`` - verify the consistency of the nix database
+
+Further Reading
+---------------
+
+You are now equipped with all the basic knowledge of Nix and
+Nix packaging, you can now move on to the `Nix Haskell Guide
+<getting-started-nix-haskell.rst>`_.

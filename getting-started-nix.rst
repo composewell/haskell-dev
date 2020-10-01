@@ -24,15 +24,18 @@ Requirements
 
 Nix may take a fair amount of disk space (e.g. 5 GB to begin with)
 as it installs a self contained package ecosystem with all the
-dependencies. It does not depend on most system libraries. The initial
-install may take some time as it may have to install a fair number
-of packages. The used space grows as you use more packages, however,
-you can use ``nix-collect-garbage`` to recover space from unused
-packages/derivations.
+dependencies. It does not depend on most system libraries. In other
+words, it is a self contained distribution within a distribution. If you
+want pure nix wtihout having to install it inside another distribution
+take a look at NixOS.
 
-For powerful use, you may have to spend some time to learn the Nix
-expression language to use Nix effectively, but its declarative and easy
-to learn, and a small subset is enough to get going.
+The initial install may take some time as it may have to install a fair
+number of packages. ``nix-collect-garbage`` helps you keep it space
+efficient.
+
+For powerful use, you may have to spend some time learning the Nix
+expression language to use Nix effectively, its declarative and easy
+to learn, a small subset is enough to get going.
 
 Advantages
 ----------
@@ -111,20 +114,76 @@ working correctly::
     $ nix-env --version
     nix-env (Nix) 2.3.6
 
-Nix User Profiles
-~~~~~~~~~~~~~~~~~
+Nix Store
+---------
+
+Nix knows about a collection of packages and how to build them from
+sources.  Packages may have other packages as dependencies. When
+a package is installed all its dependencies are installed
+first. Each package is installed in a *self contained* directory
+in ``/nix/store``. For example coreutils may be installed in:
+``/nix/store/7g6ar24krh7vn66gvfwwv3nq9xsh5c6i-coreutils-8.31``.
+
+The directory name is a hash followed by the package name and
+version. The hash is uniquely determined by all the environment inputs
+used to build the package. If anything changes the hash would be
+different. Multiple instances of the same package built with different
+configuration may be present in the store with different directory
+names.
+
+The package directory is a self contained directory and mimics the root of the
+file system::
+
+  # ls -l /nix/store/7g6ar24krh7vn66gvfwwv3nq9xsh5c6i-coreutils-8.31
+  total 8
+  dr-xr-xr-x    2 root     root          4096 Jan  1  1970 bin
+  dr-xr-xr-x    3 root     root          4096 Jun 10 16:45 libexec
+
+Nix Profile Directories
+-----------------------
 
 A nix profile is a self contained directory consisting of a particular
-set of installed programs and libraries.  A user may create multiple nix
-profiles.  ``$HOME/.nix-profile`` is a symlink to the active profile::
+set of installed programs and libraries. These programs are symlinks to the
+programs in packages installed in ``/nix/store``. For example::
+
+  # ls -al .nix-profile/
+  total 128
+  dr-xr-xr-x    2 root     root          4096 Jan  1  1970 .
+  drwxrwxr-t    1 root     nixbld      114688 Sep  7 11:02 ..
+  lrwxrwxrwx    2 root     root            57 Jan  1  1970 bin -> /nix/store/j8dbv5w6jl34caywh2ygdy88knx1mdf7-nix-2.3.6/bin
+  lrwxrwxrwx    2 root     root            57 Jan  1  1970 etc -> /nix/store/j8dbv5w6jl34caywh2ygdy88knx1mdf7-nix-2.3.6/etc
+  lrwxrwxrwx    2 root     root            61 Jan  1  1970 include -> /nix/store/j8dbv5w6jl34caywh2ygdy88knx1mdf7-nix-2.3.6/include
+  lrwxrwxrwx    2 root     root            57 Jan  1  1970 lib -> /nix/store/j8dbv5w6jl34caywh2ygdy88knx1mdf7-nix-2.3.6/lib
+  lrwxrwxrwx    2 root     root            59 Jan  1  1970 share -> /nix/store/j8dbv5w6jl34caywh2ygdy88knx1mdf7-nix-2.3.6/share
+
+A nix profile directory is the root of the entire distribution as visible to a
+user. ``<nix-profile>/bin`` contains the binary executables available in
+the current profile, ``<nix-profile>/lib`` contains the libraries and so
+on.
+
+By default a nix profile directory is created in
+``/nix/var/nix/profiles/per-user/$USER/profile``.  A user may create
+multiple nix profile directories, they could be anywhere in your file
+system not necessarily in ``/nix``.
+
+User's view of the nix system
+-----------------------------
+
+``$HOME/.nix-profile`` is a symlink to one of the profile directories and is
+called the active profile::
 
     $ ls -al ~/.nix-profile
     lrwxr-xr-x  1 harendra  staff  47 Jul  8 12:32 /Users/harendra/.nix-profile -> /nix/var/nix/profiles/per-user/harendra/profile
 
-``~/.nix-profile/bin`` contains the binary executables available in the
-current profile, ``~/.nix-profile/lib`` contains the libraries and so
-on. ``~/.nix-profile/bin`` is placed in your OS shell ``PATH`` so these
-programs are available in your shell.
+There is a script that sets up the user's PATH and other environment
+variables in the shell such that the binaries from the nix profile are
+available to the user, libraries are used from the nix profile, man pages are
+picked from the profile etc::
+
+  $ source ~/.nix-profile/etc/profile.d/nix.sh
+
+Once this script is sourced (typically from the shell profile) you are all set
+to use nix installed packages.
 
 Useful Commands
 ---------------
@@ -155,7 +214,7 @@ Nix Packages and Nix Expressions
 --------------------------------
 
 Nix package manager installs nix packages and their dependencies
-and makes them available in a user environment.  A nix package is
+and makes them available in a "user environment".  A nix package is
 described using a Nix expression. A Nix expression is a recipe
 (known as a derivation) to build (derive) binaries from a source
 package. However, it first tries to install prebuilt binaries from
@@ -185,7 +244,66 @@ Use the ``nix-channel`` command to manage the channels ::
 
   $ nix-channel --list
   nixpkgs https://nixos.org/channels/nixpkgs-unstable
+
+  # To use the latest release for new derivations
   $ nix-channel --update
+
+  # Upgrade all packages to the same versions in newer release
+  $ nix-env --upgrade --eq
+
+You can add a github repo as channel::
+
+    $ nix-channel --add https://github.com/rycee/home-manager/archive/master.tar.gz home-manager
+    $ nix-channel --update
+
+Distribution Details
+--------------------
+
+* The source of packages is at: https://github.com/NixOS/nixpkgs-channels
+* Hydra CI system builds from a commit in the source repo and tests
+* New release info is added to: https://releases.nixos.org/?prefix=nixpkgs/
+
+  * git-revision of https://github.com/NixOS/nixpkgs-channels used
+  * A tar of nixpkgs-channels.
+  * URL to the hydra job e.g. https://hydra.nixos.org/eval/1611864
+  * A file containing a list of all store paths (e.g.
+    ``/nix/store/2g2lalsi9h1bhk1klwqj5qn5da8lbmb5-nix-3.0pre20200829_f156513-man``)
+  * The binary cache url (https://cache.nixos.org)
+* https://nixos.org/channels/nixpkgs-unstable points to latest release e.g.
+  https://releases.nixos.org/nixpkgs/nixpkgs-20.09pre242481.0ecc8b9a56a
+* ``$HOME/.nix-channels`` points to https://nixos.org/channels/nixpkgs-unstable
+
+Using the Release
+-----------------
+
+nix commands use a nix expression as input which is passed to
+the nix expression being evaluated. By default the input nix
+expression (set by ``NIX_PATH`` environment variable) is the directory
+``.nix-defexpr``, this is called the default nix expression. 
+
+The directory ``.nix-defexpr`` contains the nix expressions of all the
+subscribed channels. All these expressions get combined as one and used
+as input to the derivations by nix commands.  See ``nix-env --help`` for
+details on how the contents of ``.nix-defexpr`` are combined together to
+create a single nix expressions.
+
+The command ``nix-channel`` places symlinks to the downloaded Nix
+expressions from each subscribed channel in ``$HOME/.nix-defexpr`` e.g.
+``/nix/store/gnkd9i59pswalkflb647fnjjnxgyl1n9-nixpkgs-20.09pre228453.dcb64ea42e6/nixpkgs``
+is a symlink to the ``nixpkgs-unstable`` release.  This is basically the
+contents of the ``nixpkgs-channels`` tar obtained from the release.
+``nix-channel --update`` updates these symlinks.
+
+The input nix expression can be overridden on the command line using the
+``--file`` option.
+
+When a new derivation is to be built the store paths of the input
+artifacts are derived, if the derived path is available in the binary
+cache, it is fetched from the nix cache URL otherwise it is built from
+the source. Note that the derived path depends on the whole build
+environment, if anything in the environment can affect the derivation,
+the hash and therefore the path would be different and we would end up
+building the artifact again instead of reusing the pre-built one.
 
 Nix User Environments
 ---------------------
@@ -242,9 +360,19 @@ Nix Package Manager
 or installs packages from the default nix channel or the channels added using
 ``nix-channel``.
 
-Query all installed packages::
+Query using cache (this is faster)::
+
+    $ nix search -u   # update cache
+    $ nix search ghc
+
+Search using ``nix-env`` is slower because it evaluates the whole expression.
+
+Query installed packages::
 
   $ nix-env -q       # --query, installed packages in the active profile
+
+Query available packages::
+
   $ nix-env -qa      # --available, available packages
 
 Query selected packages::
@@ -263,8 +391,10 @@ Packages by Attributes
 ----------------------
 
 Nix packages are grouped under an attribute hierarchy starting with
-``nixpkgs`` at the top level.  To list a package attribute path use
-``-P``::
+``nixpkgs`` at the top level.  ``nixpkgs`` refers to the nix expression in
+``$HOME/.nix-defexpr/channels/nixpkgs``.
+
+To list a package attribute path use ``-P``::
 
   $ nix-env -qaP '.*cabal.*'
   nixpkgs.cabal-install        cabal-install-3.2.0.0
@@ -487,6 +617,7 @@ sandbox. However, the creation of the sandbox may mostly involves setting up
 some symlinks if the packages being installed are in the nix store already.
 
 See ``nix-shell --help`` for more details.
+See ``nixpkgs.pkgs.mkShell`` function.
 
 Caching of packages
 ~~~~~~~~~~~~~~~~~~~
@@ -499,9 +630,25 @@ is hashed using the config of the sandbox.
 Upgrade
 -------
 
-Upgrade::
+Upgrading one or more packages to newer version in the same release::
 
   $ nix-env --upgrade ghc
+
+The upgrade is immutable, it will create a new user environment with the
+upgraded version and its dependencies. A newer generation of the profile is
+created.
+
+Upgrading all packages::
+
+  $ nix-env --upgrade
+
+Upgrading to a newer release::
+
+  $ nix-channel --update
+  $ nix-env --upgrade --eq
+
+The ``--eq`` instructs upgrade to upgrade to the same versions of packages in
+the newer release.
 
 Uninstalling packages
 ---------------------
@@ -510,19 +657,24 @@ Uninstalling packages
 
   $ nix-env --uninstall firefox
   $ nix-collect-garbage
+  # To delete all old generations of profiles
+  $ nix-collect-garbage -d
 
 Garbage Collection
 ------------------
 
-The nix store can grow over time accumulating packages which are
-no longer required thus unnecessarily consuming disk space. Use
-``nix-collect-garbage`` to free up space.
+nix is immutable package manager. When you install new versions of
+packages or upgrade the packages it does not remove the old ones instead
+new versions are installed independently and made available via a new
+generation of the user profile.  Therefore, the nix store can grow
+over time accumulating packages which are no longer required thus
+unnecessarily consuming disk space.
 
-``nix-collect-garbage`` deletes all the objects in the nix store which are not
-being pointed to by anyone else in the nix store. Starting from the default
-profiles?
-
-TBD: pinning derivations.
+``nix-collect-garbage`` deletes all the objects in the nix store
+which are not reachable from ``/nix/var/nix/gcroots``. The default
+profiles are already linked from ``gcroots``.  If you do not want your
+private profiles to be garbage collected create symlinks to those in
+``/nix/var/nix/gcroots``.
 
 Uninstall Nix
 -------------
@@ -535,20 +687,25 @@ Nix stores its files only at two places ::
 Nix package Attributes
 ----------------------
 
+The attribute ``nixpkgs`` at the top level refers to the nix expression
+in ``$HOME/.nix-defexpr/channels/nixpkgs``. The attributes under
+``nixpkgs`` just reflect the set returned by the nix expressions in that
+directory.
+
 Top level::
 
-  nixpkgs
+  nixpkgs (See $HOME/.nix-defexpr/channels/nixpkgs)
 
 General packages::
 
-  nixpkgs.pkgs
+  nixpkgs.pkgs (See $HOME/.nix-defexpr/channels/nixpkgs/pkgs/top-level)
 
 Darwin (Mac OS)
 ~~~~~~~~~~~~~~~
 
 Apple sdk and frameworks::
 
-  nixpkgs.pkgs.darwin
+  nixpkgs.pkgs.darwin (See $HOME/.nix-defexpr/channels/nixpkgs/os-specific/darwin)
   nixpkgs.pkgs.darwin.apple_sdk
   nixpkgs.pkgs.darwin.apple_sdk.frameworks
 

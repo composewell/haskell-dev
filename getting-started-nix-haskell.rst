@@ -181,12 +181,12 @@ Custom Nix Environment with Hoogle
 In our custom package distribution example, use ``ghcWithHoogle`` in
 place of ``ghcWithPackages``.  When we install it, haddock documentation
 and a hoogle database of all our Haskell packages in the distribution
-is generated and installed at ``$USER/.nix-profile/share/doc/hoogle/``.
+is generated and installed at ``$HOME/.nix-profile/share/doc/hoogle/``.
 Note that the ``hoogle`` binary in this profile is setup to pick the
 database from this location instead of the standard ``~/.hoogle``.
 The artifacts of interest in this directory are:
 
-* The haddock docs: ``index.html``, use it by opening it in a browser
+* The haddock docs: ``$HOME/.nix-profile/share/doc/hoogle/index.html``, use it by opening it in a browser
 * The hoogle database:``default.hoo``, use it by running 
   ``hoogle server --local -p 8080``
 
@@ -262,7 +262,7 @@ running tests for the package::
 
   $ cabal2nix --no-check cabal://streamly-0.6.1 > ~/.nixpkgs/streamly-0.6.1.nix
 
-Then add an override in the `default.nix` for your package as follows::
+Then add an override in `default.nix` for your package as follows::
 
   {
     packageOverrides = super:
