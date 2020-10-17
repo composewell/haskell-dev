@@ -245,16 +245,41 @@ Use the ``nix-channel`` command to manage the channels ::
   $ nix-channel --list
   nixpkgs https://nixos.org/channels/nixpkgs-unstable
 
+  # To know the current version of nix
+  $ nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'
+
+You can use any nix expression archive as a channel::
+
+  $ nix-channel --add https://github.com/rycee/home-manager/archive/master.tar.gz home-manager
+  $ nix-channel --update
+
+Upgrading
+---------
+
+nix-channel update sets up new packages to be installed from the new version.
+Note that it will install all the dependencies of the new packages as well
+using the newer specification. So you may have multiple versions of packages
+unless you upgrade the existing packages to use the new specification.
+
+::
+
   # To use the latest release for new derivations
   $ nix-channel --update
 
+  # upgrade existing packages
+  $ nix-env --upgrade
+
+Using a stable version
+----------------------
+
+TBD. How to use nixpkgs corresponding to a stable nixos version.
+
+If you have built dynamically linked programs using your current
+installation, the upgrade may break them, to install same versions of all
+packages but use the newer version of nix::
+
   # Upgrade all packages to the same versions in newer release
   $ nix-env --upgrade --eq
-
-You can add a github repo as channel::
-
-    $ nix-channel --add https://github.com/rycee/home-manager/archive/master.tar.gz home-manager
-    $ nix-channel --update
 
 Distribution Details
 --------------------
@@ -616,8 +641,15 @@ and start a new shell with the new set of packages. It will create a new
 sandbox. However, the creation of the sandbox may mostly involves setting up
 some symlinks if the packages being installed are in the nix store already.
 
+You can also run a command without spawning a shell or without installing it in
+your profile::
+
+  nix-shell -p coreutils --run ls
+
 See ``nix-shell --help`` for more details.
 See ``nixpkgs.pkgs.mkShell`` function.
+See `Nix package building guide: <getting-started-nix-pkgs.rst>`_ for more
+powerful ways to create a nix shell.
 
 Caching of packages
 ~~~~~~~~~~~~~~~~~~~
@@ -675,6 +707,42 @@ which are not reachable from ``/nix/var/nix/gcroots``. The default
 profiles are already linked from ``gcroots``.  If you do not want your
 private profiles to be garbage collected create symlinks to those in
 ``/nix/var/nix/gcroots``.
+
+Developing with Nix
+-------------------
+
+Environment Variables
+~~~~~~~~~~~~~~~~~~~~~
+
+Nix shell sets these environment variables:
+
+SHELL
+PATH
+NIX_LDFLAGS
+NIX_LDFLAGS_FOR_TARGET
+
+Compiling
+~~~~~~~~~
+
+Use C_INCLUDE_PATH=~/.nix-profile/include to find headers installed in the
+profile. 
+
+Static Linking
+~~~~~~~~~~~~~~
+
+Exporting programs from nix store.
+
+Dynamic Linking
+~~~~~~~~~~~~~~~
+
+Use LD_LIBRARY_PATH=~/.nix-profile/lib. In a nix shell we can initialize this
+variable from NIX_LDFLAGS_FOR_TARGET to find the shell provided libraries.
+
+Recipe to Reproduce an environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Can we get a recipe to reproduce a particular shell later on? Including the
+nixpkgs/nix channel plus all dependencies?
 
 Uninstall Nix
 -------------
@@ -833,6 +901,20 @@ A: The ``CoreServices`` framework is missing::
   building '/nix/store/04yl425g4lp3ld5xlzv04b7n8zbmzi3y-user-environment.drv'...
   created 71 symlinks in user environment
 
+Q. How to install the dev version of a library to get the include headers? For
+example install gmp headers to compile ghc source?
+
+A. ``nix-env`` cannot select the output paths from a multi-output derivation. See
+https://github.com/NixOS/nixpkgs/pull/76794/commits/611258f063f9c1443a5f95db3fc1b6f36bbf4b52 
+for a workaround.
+
+Further Reading
+---------------
+
+* `Nix package building guide: <getting-started-nix-pkgs.rst>`_.
+* `Nix Haskell guide: <getting-started-nix-haskell.rst>`_.
+* `Nix Reference <getting-started-nix-reference.rst>`_.
+
 Quick References
 ----------------
 
@@ -859,10 +941,12 @@ Reference Docs
 * `Nix package manager home page <https://nixos.org/nix/>`_
 * `Nix Cookbook <https://nix.dev/>`_
 
-Search Packages
-~~~~~~~~~~~~~~~
+Search, Install Packages
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 * `Search nixos/nix packages <https://nixos.org/nixos/packages.html>`_
+* https://lazamar.co.uk/nix-versions/
+* https://lazamar.github.io/download-specific-package-version-with-nix/
 
 Repositories
 ~~~~~~~~~~~~
