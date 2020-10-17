@@ -73,13 +73,15 @@ from a given set of packages::
 
 It takes a function argument, the function is passed the set of all
 Haskell packages (``pkgs``) and returns a list of packages (``[streamly
-mtl]``) to be installed along with ``ghc``.
+mtl]``) to be installed along with ``ghc``. ``ghcWithPackages`` would install
+``ghc`` and register the packages passed along with all their dependencies with
+ghc.
 
 Nix Shell for a Hackage Package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each Haskell package in the nix repository has a corresponding prebuilt
-``ghc`` shell environment available::
+Each Haskell package (each nix derivation in fact) in the nix repository
+has a corresponding prebuilt ``ghc`` shell environment available::
 
     $ nix-env -qaPA nixpkgs.haskellPackages.streamly.env
     nixpkgs.haskellPackages.streamly.env  ghc-shell-for-streamly-0.7.2
@@ -108,6 +110,100 @@ See what you have got::
       QuickCheck-2.13.2
       abstract-deque-0.3
       ...
+
+shellFor
+--------
+
+shellFor starts a shell with ghc and Haskell or non-haskell dependencies
+of given packages installed.
+
+To add additional dependencies you can create a derivation with no source but
+only dependencies and add it to the list of packages for shellFor. See
+https://github.com/alpmestan/ghc.nix/blob/master/default.nix .
+
+Haskell Packages
+----------------
+
+See this in nixpkgs/pkgs/top-level/all-packages.nix ::
+
+  nixpkgs = {
+    ...
+    haskell = callPackage ./haskell-packages.nix { };
+    haskellPackages = dontRecurseIntoAttrs haskell.packages.ghc883;
+    ...
+  }
+
+See nixpkgs/pkgs/top-level/haskell-packages.nix::
+
+  haskell = {
+    ...
+    lib
+    compiler = {
+      ...
+      ghcjs
+      ghcHead
+      ghc883
+      ...
+  }
+
+Haskell Library
+---------------
+
+Override the cabal/build config of a package.
+``nixpkgs.haskell.lib.*`` see
+nixpkgs/pkgs/development/haskell-modules/lib.nix::
+
+  lib = {
+    overrideCabal
+    packageSourceOverrides
+
+    do/dontCoverage
+    do/dontHaddock
+    doBenchmark/dontBenchmark
+    ...
+
+    add/append/removeConfigureFlag
+    addBuildTool(s)
+    addExtraLibrary
+    addBuildDepend
+    ...
+
+    enableLibraryProfiling
+    ...
+
+    shellAware
+  }
+
+Haskell Derivations
+-------------------
+
+See nixpkgs/pkgs/top-level/haskell-packages.nix::
+
+  haskell = {
+    ...
+    packageOverrides
+    packages
+    packages.ghc883.*
+    ...
+  }
+
+``nixpkgs.haskell.packages.ghcxxx.*`` see 
+nixpkgs/pkgs/development/haskell-modules/make_package_set.nix ::
+
+  packages.ghcxxx = {
+    override # Override the haskell package set
+    extend # extend the haskell package set
+
+    callHackage
+    callHackageDirect
+    callCabal2nixWithOptions
+    callCabal2nix
+    developPackage
+    ghc
+    ghcWithPackages
+    ghcWithHoogle
+    shellFor
+  }
 
 Custom Package Distribution
 ---------------------------
@@ -252,6 +348,12 @@ To use a different compiler than the one specified in ``shell.nix``::
 
   $ nix-shell --argstr compiler ghc865
 
+Nix shell for a multi-package project
+-------------------------------------
+
+* https://gist.github.com/codebje/000df013a2a4b7c10d6014d8bf7bccf3
+* https://input-output-hk.github.io/haskell.nix/reference/library/#callcabalprojecttonix
+
 Overriding a Nix installed package
 ----------------------------------
 
@@ -281,6 +383,23 @@ Then add an override in `default.nix` for your package as follows::
   }
 
 ``.`` refers to ``~/.nixpkgs``?
+
+Building haskell packages without doCheck::
+
+  nixpkgs = import (builtins.fetchTarball https://github.com/NixOS/nixpkgs/archive/dcb64ea42e6.tar.gz)
+      { overlays =
+          [(self: super: {
+                haskell = super.haskell // {
+                  packageOverrides = hself: hsuper: {
+                    mkDerivation = args: hsuper.mkDerivation (args // {
+                      doCheck = false;
+                    });
+                  };
+                };
+              }
+           )
+          ];
+      };
 
 Global Override
 ---------------
@@ -444,6 +563,15 @@ A: Edited
 ``-package Cabal`` flag when compiling but then it starts compiling the whole
 world including ghc.
 
+Compiling GHC
+-------------
+
+override gmp to install header file.
+
+::
+
+  export C_INCLUDE_PATH=~/.nix-profile/include
+
 Quick References
 ----------------
 
@@ -451,3 +579,12 @@ Quick References
 * `Nix manual Haskell section <https://nixos.org/nixpkgs/manual/#haskell>`_
 * `cabal2nix: convert cabal file to nix expression <http://hackage.haskell.org/package/cabal2nix>`_
 * `hackage2nix: update Haskell packages in nixpkgs <https://github.com/NixOS/cabal2nix/tree/master/hackage2nix>`_
+
+Resources
+---------
+
+* https://github.com/input-output-hk/haskell.nix
+* https://github.com/cachix/cachix-action
+* https://stackoverflow.com/questions/57725045/disable-building-and-running-tests-for-all-haskell-dependencies-in-a-nix-build
+* https://github.com/direnv/direnv/wiki/Nix direnv
+* https://github.com/target/lorri/ lorri

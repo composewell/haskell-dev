@@ -128,7 +128,7 @@ Building the Derivation Spec
 
 Let's actually generate the derivation spec now::
 
-  $ nix-instantiate package.nix 
+  $ nix-instantiate package.nix
   /nix/store/qg1q1hk3rb7ci8fq3ldkhgqvqfnmnal8-dummy.drv
 
 Let's open ``/nix/store/qg1q1hk3rb7ci8fq3ldkhgqvqfnmnal8-dummy.drv`` and see::
@@ -414,6 +414,30 @@ custom derivations.  See the reference guide mentioned above for
 some common ones. For an authoritative source of all functions see
 ``$HOME/.nix-defexpr/channels/nixpkgs``.
 
+Nix shell
+---------
+
+``nix-shell file.nix`` starts a shell from the nix expression in
+``file.nix`` ::
+
+  with (import <nixpkgs> {});
+  mkShell {
+    buildInputs = [
+      coreutils
+      gmp
+    ];
+
+    shellHook = ''
+      alias ll = "ls -l"
+      export C_INCLUDE_PATH = "${gmp}/include"
+    '';
+  }
+
+By default nix-shell spawns a shell from ``shell.nix`` if the filename argument
+is not specified.
+
+The file must specify a derivation. ``mkShell`` above generates a derivation.
+
 Nix distribution
 ----------------
 
@@ -424,8 +448,59 @@ evaluating ``$HOME/.nix-defexpr``. Packages derived from this source are
 fetched, built and stored in the nix store. When packages are available in the
 binary cache they are downloaded from the cache.
 
-Nix User Config
-~~~~~~~~~~~~~~~
+Picking a Nix distribution
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Instead of picking nixpkgs from NIX_PATH or configured nix channels, we
+can pick a specific version of nixpkgs in our nix expression code::
+
+  nixpkgs = import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/4da09d369baa2200edb9df27fe9c88453b0ea6cf.tar.gz") {}
+
+This can be used to pin the code to a specific version. For stability use a
+stable nixos release version or for most current release use nixos-unstable.
+
+Customizing the Nix distribution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The nix distribution is derived from the combined nix expression
+provided by the configured channels. It can be customized by:
+
+* When importing nixpkgs ``import <nixpkgs> config``
+* a configuration file in ``~/.config/nixpkgs/config.nix``
+* specifying overlays using the ``~/.config/nixpkgs/overlays.nix`` file
+* Specifying overlays using individual overlay files in the
+   ``~/.config/nixpkgs/overlays directory.``
+* using environment variables
+
+Config specification
+~~~~~~~~~~~~~~~~~~~~
+
+Configuration to customize nixpkgs is specified as a set with attributes ::
+
+  {
+    allowUnfree =
+    allowUnfreePredicate =
+    allowBroken =
+    allowUnsupportedSystem =
+    whitelistedLicenses =
+    blacklistedLicenses = 
+    allowInsecurePredicate = 
+    permittedInsecurePackages =
+    packageOverrides =
+    overlays =
+  }
+
+Usually we skip the config when importing nixpkgs and default values of these
+attributes are used::
+
+  import <nixpkgs> {};
+
+However we can use a config::
+
+  import <nixpkgs> { allowUnfree = true; };
+
+Configuration file
+~~~~~~~~~~~~~~~~~~
 
 XXX todo: move the distracting parts out in a let caluse. Explain those in
 separate sections before the config example.
@@ -503,21 +578,131 @@ own packages to it::
 See ``~/.nix-defexpr/channels/nixpkgslib/licenses.nix`` for a complete
 list of licenses.
 
-Environment variables::
+Environment variables
+~~~~~~~~~~~~~~~~~~~~~
+
+::
 
   $ export NIXPKGS_ALLOW_BROKEN=1
   $ export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
   $ export NIXPKGS_ALLOW_UNFREE=1
   $ export NIXPKGS_ALLOW_INSECURE=1
 
-Overlays
-~~~~~~~~
-
 Overrides
 ~~~~~~~~~
 
+A package set is a dependency tree. Packages at the top of the tree
+depend on packages below. If we override a package in this tree the
+whole tree should be rebuilt to use the changed definition wherever the
+package is used.
+
+Note that overriding a package lower below may cause rebuilding of all
+the packages that depend on it. To avoid rebuilding the whole world we
+can push the override as far above in the tree as possible. For example,
+if one of the packages that depends on "git" requires a changed definition
+of git then we can override that package to use a new "git" instead of
+overriding the original "git".
+
+The functions below are basic low level constructs to override
+individual packages in the package set.
+
+Override is used on a function to override its arguments.  Wherever a
+function is called to build the whole package set, it is effectively
+replaced by its overridden definition. ``makeOverridable`` can be used to make
+a function overridable, providing a ``override`` attribute that can be called
+to override its arguments.
+
+::
+  <pkg>.override          # override the arguments passed to an overridable function "pkg".
+  <pkg>.overrideAttrs     # override the attribute set passed to a stdenv.mkDerivation call
+  <pkg>.overrideDerivation # override a derivation using an old derivation
+  lib.makeOverridable
+
+
+* https://nixos.org/manual/nixpkgs/stable/#chap-overrides
 * https://nixos.org/guides/nix-pills/override-design-pattern.html
 * https://nixos.org/guides/nix-pills/nixpkgs-overriding-packages.html
+
+Overlays
+~~~~~~~~
+
+Override is used to override function definitions whereas overlays
+override sets. We can combine a set definition with a new overridden
+definition to create a new resulting set. This can be used to override
+the entire set of packages (``nixpkgs``).
+
+Overlays are Nix functions which accept two arguments, conventionally
+called ``self`` and ``super``, and return a set of packages. The first
+argument (self) corresponds to the final package set. The second
+argument (super) corresponds to the result of the evaluation of the
+previous stages of Nixpkgs. It does not contain any of the packages
+added by the current or following overlays::
+
+  self: super:
+      {
+        boost = super.boost.override {
+          python = self.python3;
+        };
+        rr = super.callPackage ./pkgs/rr {
+          stdenv = self.stdenv_32bit;
+        };
+      }
+
+The value returned by this function should be a set similar to
+``pkgs/top-level/all-packages.nix``, containing overridden and/or new
+packages.
+
+* See https://nixos.wiki/wiki/Overlays for a good explanation
+
+Applying Overlays
+.................
+
+1) When importing nixpkgs::
+
+  import <nixpkgs> { overlays = [ overlay1 overlay2 ]; }.
+2) Using ~/.config/nixpkgs/overlays.nix file
+3) By creating individual overlay files in the
+   ~/.config/nixpkgs/overlays directory.
+4) By calling the following::
+
+  pkgs.extend
+  pkgs.appendOverlays
+
+This is more expensive as it recomputes the nixpkgs fixed point.
+
+packageOverrides
+~~~~~~~~~~~~~~~~
+
+``packageOverrides`` acts as an overlay with only the ``super``
+argument. It is therefore appropriate for basic use, but overlays are
+more powerful and easier to distribute.
+
+We can modify the attibutes of a package derivation or add new package
+derivations to the set of packages in ``nixpkgs`` ::
+
+  {
+    packageOverrides = pkgs: rec {
+      coreutils = pkgs.coreutils.override { ... };
+    };
+  }
+
+Modifying packages to install extra outputs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For example, if we want to install the dev version of the gmp package to get
+the gmp.h header file installed in ~/.nix-profile/include ::
+
+  {
+    packageOverrides = super:
+    {
+        gmp =
+            super.gmp.overrideAttrs (oldAttrs:
+                {
+                  meta = oldAttrs.meta // { outputsToInstall = oldAttrs.meta.outputsToInstall or [ "out" ] ++ [ "dev" ]; };
+                }
+            );
+    };
+  }
 
 Nix Global Data
 ~~~~~~~~~~~~~~~
@@ -572,3 +757,9 @@ Further Reading
 You are now equipped with all the basic knowledge of Nix and
 Nix packaging, you can now move on to the `Nix Haskell Guide
 <getting-started-nix-haskell.rst>`_.
+
+References
+----------
+
+* https://nix.dev/tutorials/towards-reproducibility-pinning-nixpkgs.html#pinning-nixpkgs
+* https://ghedam.at/15978/an-introduction-to-nix-shell
