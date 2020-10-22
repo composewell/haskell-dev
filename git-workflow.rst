@@ -56,6 +56,8 @@ new changes from the remote repo using `git pull`::
     $ git push origin my-branch # push the changes on  branch my-branch to "origin"
     $ git pull                  # pulls from origin by default
 
+Set ``git config --global pull.ff only`` so that we do not accidentally merge.
+
 Modifying files
 ---------------
 
