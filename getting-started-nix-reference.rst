@@ -67,6 +67,13 @@ String interpolation, expand an expression in a string::
 
     let expr = "world" in "hello ${expr}"
 
+Since ${ and '' have special meaning in indented strings, you need a way
+to quote them. $ can be escaped by prefixing it with '' (that is, two
+single quotes), i.e., ''$. '' can be escaped by prefixing it with ',
+i.e., '''. $ removes any special meaning from the following $. Linefeed,
+carriage-return and tab characters can be written as ''\n, ''\r, ''\t,
+and ''\ escapes any other character.
+
 Local variables
 ~~~~~~~~~~~~~~~
 
