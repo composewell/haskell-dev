@@ -274,7 +274,7 @@ Using a stable version
 
 TBD. How to use nixpkgs corresponding to a stable nixos version.
 
-If you have built dynamically linked programs using your current
+If you have built dynamically linked programs (external to nix) using your current
 installation, the upgrade may break them, to install same versions of all
 packages but use the newer version of nix::
 
@@ -960,3 +960,4 @@ Others
 
 * `NixOS <https://nixos.org/>`_
 * `Nix based CI <https://github.com/mightybyte/zeus>`_
+* http://sandervanderburg.blogspot.com/2013/06/setting-up-multi-user-nix-installation.html

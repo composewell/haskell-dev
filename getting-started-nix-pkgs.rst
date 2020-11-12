@@ -763,3 +763,4 @@ References
 
 * https://nix.dev/tutorials/towards-reproducibility-pinning-nixpkgs.html#pinning-nixpkgs
 * https://ghedam.at/15978/an-introduction-to-nix-shell
+* http://sandervanderburg.blogspot.com/2013/06/setting-up-multi-user-nix-installation.html
