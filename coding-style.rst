@@ -562,7 +562,9 @@ Multi line ::
             False ...
     else z
 
-Cascading ::
+One way branching in a cascading conditional clause can be flattened to reduce
+indentation, this is just another way writing a multi-way if without using the
+extension::
 
     if x
     then y
