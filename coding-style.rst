@@ -212,6 +212,19 @@ Multi-line ::
 
   where
 
+Exports
+-------
+
+* Export symbols explicitly. Rationale:
+
+    * If not explicitly exported, you may miss unused functions in the
+      module as all functions get exported by default. For example, you defined
+      a benchmarking function but did not add it to benchmarks list. It will
+      never be reported as it is treated as used via implicit exports.
+    * Compiler optimizations get impacted due to exporting because the compiler
+      has to optimize the function and put it in the interface files.
+      Optimizations work better and are more efficient if you explictly export.
+
 Imports
 -------
 
