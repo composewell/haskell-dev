@@ -1063,6 +1063,7 @@ Package Repositories, Documentation, Search:
 * `Stackage package snapshots <https://www.stackage.org/>`_
 * `Documentation by module on stackage <https://www.stackage.org/lts/docs>`_
 * `Haskell Search Engine <https://hoogle.haskell.org/>`_
+* https://hackage-search.serokell.io/
 
 Packages:
 
