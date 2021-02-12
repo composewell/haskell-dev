@@ -2,7 +2,7 @@ Nix Package Derivation
 ======================
 
 If you are new to nix read the `Nix getting started guide
-<getting-started-nix.rst>`_ first.
+<user-guide.rst>`_ first.
 
 Nix is an "immutable" package manager, it can be used to build,
 install, use and remove packages from different sources into the system
@@ -17,8 +17,8 @@ one package cannot affect other packages, each package can have its own
 See `Nix Reference <getting-started-nix-reference.rst>`_ for nix
 expression language and builtin functions.
 
-Derivation Process
-------------------
+Building Packages
+-----------------
 
 Packages in nix are self contained directory trees in nix store. These
 directory trees are derived from source recipes that define the sources,
@@ -38,8 +38,8 @@ object using a nix expression. We generalize the term "package" to
 "derived object" or "derivation". The term "derivation" can also used to
 refer to the process or the recipe used to build the object.
 
-Describing a Derived Object
----------------------------
+Derivations Recipe
+~~~~~~~~~~~~~~~~~~
 
 A derived object is described by a nix expression, usually in a
 file, say ``package.nix``. The primitive nix operation to create a
@@ -370,8 +370,8 @@ Installing the package
 
     $ nix-env -i ./result
 
-Creating a user environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Building user environments
+--------------------------
 
 We now know how to build a derived object from a recipe using
 ``nix-build``.  The derived object output from ``nix-build`` is stored
@@ -414,8 +414,8 @@ custom derivations.  See the reference guide mentioned above for
 some common ones. For an authoritative source of all functions see
 ``$HOME/.nix-defexpr/channels/nixpkgs``.
 
-Nix shell
----------
+Building Nix shell
+------------------
 
 ``nix-shell file.nix`` starts a shell from the nix expression in
 ``file.nix`` ::
@@ -438,10 +438,10 @@ is not specified.
 
 The file must specify a derivation. ``mkShell`` above generates a derivation.
 
-Nix distribution
-----------------
+Customizing Nix distribution
+----------------------------
 
-`Nix getting started guide <getting-started-nix.rst>`_ describes how the
+`Nix getting started guide <user-guide.rst>`_ describes how the
 nix distribution works. The whole distribution or collection of packages
 visible to nix commands are defined by the nix expression obtained by
 evaluating ``$HOME/.nix-defexpr``. Packages derived from this source are
@@ -451,8 +451,8 @@ binary cache they are downloaded from the cache.
 Picking a Nix distribution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Instead of picking nixpkgs from NIX_PATH or configured nix channels, we
-can pick a specific version of nixpkgs in our nix expression code::
+Within a nix expression, instead of picking nixpkgs from NIX_PATH or
+configured nix channels, we can pick a specific version of nixpkgs::
 
   nixpkgs = import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/4da09d369baa2200edb9df27fe9c88453b0ea6cf.tar.gz") {}
 
@@ -462,15 +462,19 @@ stable nixos release version or for most current release use nixos-unstable.
 Customizing the Nix distribution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The nix distribution is derived from the combined nix expression
-provided by the configured channels. It can be customized by:
+What nix packages are available to you is determined by the
+``NIX_PATH``. The directories in the ``NIX_PATH`` are combined together
+in a single nix expression, this nix expression is used by the nix
+utilities to show available packages or to install packages.
 
-* When importing nixpkgs ``import <nixpkgs> config``
-* a configuration file in ``~/.config/nixpkgs/config.nix``
-* specifying overlays using the ``~/.config/nixpkgs/overlays.nix`` file
+We can customize the distribution we are using by:
+
+* Specifying a config when importing nixpkgs ``import <nixpkgs> config``
+* Using a global configuration file in ``~/.config/nixpkgs/config.nix``
+* Specifying overlays using the ``~/.config/nixpkgs/overlays.nix`` file
 * Specifying overlays using individual overlay files in the
    ``~/.config/nixpkgs/overlays directory.``
-* using environment variables
+* Using environment variables
 
 Config specification
 ~~~~~~~~~~~~~~~~~~~~
@@ -613,6 +617,7 @@ a function overridable, providing a ``override`` attribute that can be called
 to override its arguments.
 
 ::
+
   <pkg>.override          # override the arguments passed to an overridable function "pkg".
   <pkg>.overrideAttrs     # override the attribute set passed to a stdenv.mkDerivation call
   <pkg>.overrideDerivation # override a derivation using an old derivation
@@ -659,14 +664,15 @@ Applying Overlays
 
 1) When importing nixpkgs::
 
-  import <nixpkgs> { overlays = [ overlay1 overlay2 ]; }.
-2) Using ~/.config/nixpkgs/overlays.nix file
+    import <nixpkgs> { overlays = [ overlay1 overlay2 ]; }.
+
+2) Using ``~/.config/nixpkgs/overlays.nix`` file
 3) By creating individual overlay files in the
-   ~/.config/nixpkgs/overlays directory.
+   ``~/.config/nixpkgs/overlays`` directory.
 4) By calling the following::
 
-  pkgs.extend
-  pkgs.appendOverlays
+    pkgs.extend
+    pkgs.appendOverlays
 
 This is more expensive as it recomputes the nixpkgs fixed point.
 
@@ -686,8 +692,8 @@ derivations to the set of packages in ``nixpkgs`` ::
     };
   }
 
-Modifying packages to install extra outputs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installing Additional Package Components
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For example, if we want to install the dev version of the gmp package to get
 the gmp.h header file installed in ~/.nix-profile/include ::
@@ -703,6 +709,9 @@ the gmp.h header file installed in ~/.nix-profile/include ::
             );
     };
   }
+
+Working with Nix Store
+----------------------
 
 Nix Global Data
 ~~~~~~~~~~~~~~~
@@ -730,23 +739,37 @@ its dependencies.
 The ``nix-store`` command can be used to manipulate the contents of the
 nix store. See ``nix-store --help``.
 
-Subtree/path level
+Subtree/path level:
+
+Create:
+
+* ``nix-store --add`` - add a path to nix-store
+* ``nix-store --realise`` - make sure the given store path tree is complete and
+  valid, if not fetch it or build it.
+* ``nix-store --restore`` - restore a path tree from a nix archive (tar)
+* ``nix-store --import`` - import an exported archive (see --export)
+* ``nix-store --load-db`` - load a nix db for the path tree (see --dump-db)
+
+Read:
+
 * ``nix-store --query`` - query info about a path
 * ``nix-store --print-env`` - environment of a .drv path
 * ``nix-store --read-log`` - print build log of a path
+* ``nix-store --verify-path`` - verify a path
+* ``nix-store --dump`` - dump a path tree as nix archive (tar)
+* ``nix-store --export`` - export an archive for non nix-store purposes
+* ``nix-store --dumpdb`` - dump nix db for the path tree
 
-* ``nix-store --verify-path/repair-path`` - verify/repair a path
-* ``nix-store --realise`` - make sure the given store path tree is complete and
-  valid, if not fetch it or build it.
+Update:
 
-* ``nix-store --add`` - add a path to nix-store
-* ``nix-store --dump/restore`` - dump/restore a path tree as nix archive (tar)
-* ``nix-store --export/import`` - export/import an archive for non nix-store purposes
-* ``nix-store --dumpdb/load-db`` - dump nix db for the path tree
+* ``nix-store --repair-path`` - repair a path
+
+Delete:
 
 * ``nix-store --delete`` - delete if nobody is using it
 
 Store level:
+
 * ``nix-store --serve`` -  provide access to the whole store over stdin/stdout
 * ``nix-store --gc`` - garbage collect
 * ``nix-store --verify`` - verify the consistency of the nix database
@@ -755,12 +778,11 @@ Further Reading
 ---------------
 
 You are now equipped with all the basic knowledge of Nix and
-Nix packaging, you can now move on to the `Nix Haskell Guide
-<getting-started-nix-haskell.rst>`_.
+Nix packaging, you can now move on to the `Nix Haskell Development Guide
+<haskell-development.rst>`_.
 
 References
 ----------
 
 * https://nix.dev/tutorials/towards-reproducibility-pinning-nixpkgs.html#pinning-nixpkgs
 * https://ghedam.at/15978/an-introduction-to-nix-shell
-* http://sandervanderburg.blogspot.com/2013/06/setting-up-multi-user-nix-installation.html
