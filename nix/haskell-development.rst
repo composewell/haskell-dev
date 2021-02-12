@@ -3,11 +3,14 @@ Getting Started with Haskell on Nix
 
 See the `Haskell starting guide <getting-started.rst>`_ if
 you are new to Haskell.  See the `Nix getting started guide
-<getting-started-nix.rst>`_ first and then `Nix Package Management guide
-<getting-started-nix-pkgs.rst>`_ if you are new to nix.
+<user-guide.rst>`_ first and then `Nix Package Derivation guide
+<package-derivation.rst>`_ if you are new to nix.
 
-Query and Install Haskell Packages
-----------------------------------
+.. contents:: Table of Contents
+   :depth: 1
+
+Installing Haskell Packages
+---------------------------
 
 The default version of ``ghc`` is available directly under ``nixpkgs``
 namespace::
@@ -34,16 +37,16 @@ Installing Haskell packages::
   $ nix-env -iA nixpkgs.haskellPackages.streamly
   $ nix-env -iA nixpkgs.haskell.packages.ghc883.streamly
 
-Nix Shell for Haskell Development
----------------------------------
+Haskell Development Using Nix Shell
+-----------------------------------
 
-We can use ``nix-shell`` to install ``ghc`` and required Haskell
-packages.  In the shell we can use ``ghc`` and ``cabal`` as usual to
-compile and build Haskell programs that depend on that ``ghc`` and the
-packages we have installed with it.
+We can use ``nix-shell`` to get a user environment with ``ghc`` and
+required Haskell packages installed in it.  In the shell we can use
+``ghc`` and ``cabal`` as usual to compile and build Haskell programs
+that depend on that ``ghc`` and the packages we have installed with it.
 
-Nix Shell with GHC
-~~~~~~~~~~~~~~~~~~
+Shell with packages
+~~~~~~~~~~~~~~~~~~~
 
 Start a shell with ``ghc-8.6.5``::
 
@@ -62,32 +65,18 @@ Let's check what we have in the new shell::
       base-4.12.0.0
       ...
 
-haskellPackages.ghcWithPackages
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Shell with package environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We can use the nix library function ``haskellPackages.ghcWithPackages``
-to generate the list of packages along with the full set of their dependencies
-from a given set of packages::
-
-  $ nix-shell --packages "haskellPackages.ghcWithPackages (pkgs: with pkgs; [streamly mtl])"
-
-It takes a function argument, the function is passed the set of all
-Haskell packages (``pkgs``) and returns a list of packages (``[streamly
-mtl]``) to be installed along with ``ghc``. ``ghcWithPackages`` would install
-``ghc`` and register the packages passed along with all their dependencies with
-ghc.
-
-Nix Shell for a Hackage Package
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Each Haskell package (each nix derivation in fact) in the nix repository
-has a corresponding prebuilt ``ghc`` shell environment available::
+Each nix derivation in the nix repository has a shell environment
+output artifact available that can be used by nix-shell to recreate the
+environment used to build the package::
 
     $ nix-env -qaPA nixpkgs.haskellPackages.streamly.env
     nixpkgs.haskellPackages.streamly.env  ghc-shell-for-streamly-0.7.2
 
 We can start a nix-shell by using the "<nixpkgs>" (which means find
-``nixpkgs`` in ``NIX_PATH``) expression path and the attribute
+``nixpkgs`` in ``NIX_PATH``) expression path, and using the attribute
 identifying the shell environment under ``nixpkgs``::
 
   $ nix-shell -A haskellPackages.streamly.env "<nixpkgs>"
@@ -111,18 +100,102 @@ See what you have got::
       abstract-deque-0.3
       ...
 
-shellFor
---------
+Shell with packages & dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-shellFor starts a shell with ghc and Haskell or non-haskell dependencies
-of given packages installed.
+We can use the nix library function ``haskellPackages.ghcWithPackages``
+to generate the list of packages along with the full set of their dependencies
+from a given set of packages::
+
+  $ nix-shell --packages "haskellPackages.ghcWithPackages (pkgs: with pkgs; [streamly mtl])"
+
+It takes a function argument, the function is passed the set of all
+Haskell packages (``pkgs``) and returns a list of packages (``[streamly
+mtl]``) to be installed along with ``ghc``. ``ghcWithPackages`` would install
+``ghc`` and register the packages passed along with all their dependencies with
+ghc.
+
+Shell from cabal file
+~~~~~~~~~~~~~~~~~~~~~
+
+Create a custom shell environment for a local package::
+
+  $ cabal2nix --shell . > shell.nix
+
+  $ nix-shell
+
+  [nix-shell]$ ghc-pkg list
+  [nix-shell]$ cabal build
+
+Since nix shell already installed all the dependencies and registers them
+with ``ghc``, ``cabal build`` does not build any dependencies, it just
+builds the current package using the pre-installed dependencies.
+
+If you want to add additional packages, you need to exit the shell, add the new
+package to ``shell.nix``, and restart the shell.
+
+Environment variables inherited from the current shell can still influence the
+build in the nix shell. To make sure that the environment is cleared in the nix
+shell::
+
+  $ nix-shell --pure
+
+Note that with this option ``.bashrc`` (or the rc file of your shell) is
+still run.
+
+To use a different compiler than the one specified in ``shell.nix``::
+
+  $ nix-shell --argstr compiler ghc865
+
+Shell from cabal.project
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* https://gist.github.com/codebje/000df013a2a4b7c10d6014d8bf7bccf3
+* https://input-output-hk.github.io/haskell.nix/reference/library/#callcabalprojecttonix
+
+Custom shell
+~~~~~~~~~~~~
+
+``haskellPackages.shellFor`` starts a shell with ghc and Haskell or
+non-haskell dependencies of given packages installed.
 
 To add additional dependencies you can create a derivation with no source but
-only dependencies and add it to the list of packages for shellFor. See
+only dependencies and add it to the list of packages for ``shellFor``. See
 https://github.com/alpmestan/ghc.nix/blob/master/default.nix .
 
+Cabal
+~~~~~
+
+Run cabal commands using the nix shell environment defined in your
+``shell.nix`` file ::
+
+  cabal --enable-nix ...
+
+Stack
+~~~~~
+
+Build with stack using your nix environment ::
+
+  stack --nix build
+
+Shell Environment Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Nix shell sets these environment variables::
+
+  SHELL
+  PATH
+  NIX_LDFLAGS
+  NIX_LDFLAGS_FOR_TARGET
+
+The nix installed C tool chain is then able to use the linker flag
+environment variables to link to the right libraries.
+
+Haskell Derivations
+-------------------
+
 Haskell Packages
-----------------
+~~~~~~~~~~~~~~~~
 
 See this in nixpkgs/pkgs/top-level/all-packages.nix ::
 
@@ -146,8 +219,21 @@ See nixpkgs/pkgs/top-level/haskell-packages.nix::
       ...
   }
 
-Haskell Library
----------------
+Haskell Attributes
+~~~~~~~~~~~~~~~~~~
+
+::
+
+  nixpkgs.haskell
+  nixpkgs.haskell.compiler
+  nixpkgs.haskell.packages
+  nixpkgs.haskell.packages.ghc865
+  nixpkgs.haskell.packages.ghc883
+  ...
+  nixpkgs.haskellPackages
+
+Haskell Derivation Library
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Override the cabal/build config of a package.
 ``nixpkgs.haskell.lib.*`` see
@@ -175,7 +261,7 @@ nixpkgs/pkgs/development/haskell-modules/lib.nix::
   }
 
 Haskell Derivations
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 See nixpkgs/pkgs/top-level/haskell-packages.nix::
 
@@ -205,11 +291,26 @@ nixpkgs/pkgs/development/haskell-modules/make_package_set.nix ::
     shellFor
   }
 
-Custom Package Distribution
----------------------------
+Haskell mkDerivation
+~~~~~~~~~~~~~~~~~~~~
 
-A custom package distribution is a bundle of packages for a specific task.
-To make a custom package distribution, say ``nixpkgs.streamly-dev``, that can
+To dig into Haskell ``mkDerivation`` attributes, see::
+
+    ~/.nix-defexpr/channels/nixpkgs/pkgs/development/haskell-modules/generic-builder.nix
+
+Haskell build functions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    haskellPackages.ghcWithPackages
+    haskellPackages.ghcWithHoogle
+
+Custom User Environments
+------------------------
+
+A custom user environment is a bundle of packages for a specific task.
+To make a custom user environment, say ``nixpkgs.streamly-dev``, that can
 be installed using ``nix-env`` like any other nix packages::
 
     $ cat ~/.config/nixpkgs/config.nix
@@ -256,7 +357,7 @@ Now we can search this package by the attribute ``nixpkgs.streamly-dev``::
 We can also install this package using ``nix-env -iA nixpkgs.streamly-dev``.
 
 Custom Nix Profile
-------------------
+~~~~~~~~~~~~~~~~~~
 
 We can use a dedicated nix profile for our development environment and
 install our custom package distribution in this profile::
@@ -272,7 +373,7 @@ environment::
     $ ghc-pkg list
 
 Custom Nix Environment with Hoogle
-----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In our custom package distribution example, use ``ghcWithHoogle`` in
 place of ``ghcWithPackages``.  When we install it, haddock documentation
@@ -286,8 +387,8 @@ The artifacts of interest in this directory are:
 * The hoogle database:``default.hoo``, use it by running 
   ``hoogle server --local -p 8080``
 
-Nix Build for a local Package
------------------------------
+Build and install from cabal file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `cabal2nix`` converts ``<package>.cabal`` to ``<package>.nix`` nix
 expression file. Install ``cabal2nix`` ::
@@ -316,46 +417,8 @@ file generated above::
 
   $ nix-build
 
-Nix Shell for a local Package
------------------------------
-
-Create a custom shell environment for a local package::
-
-  $ cabal2nix --shell . > shell.nix
-
-  $ nix-shell
-
-  [nix-shell]$ ghc-pkg list
-  [nix-shell]$ cabal build
-
-Since nix shell already installed all the dependencies and registers them
-with ``ghc``, ``cabal build`` does not build any dependencies, it just
-builds the current package using the pre-installed dependencies.
-
-If you want to add additional packages, you need to exit the shell, add the new
-package to ``shell.nix``, and restart the shell.
-
-Environment variables inherited from the current shell can still influence the
-build in the nix shell. To make sure that the environment is cleared in the nix
-shell::
-
-  $ nix-shell --pure
-
-Note that with this option ``.bashrc`` (or the rc file of your shell) is
-still run.
-
-To use a different compiler than the one specified in ``shell.nix``::
-
-  $ nix-shell --argstr compiler ghc865
-
-Nix shell for a multi-package project
--------------------------------------
-
-* https://gist.github.com/codebje/000df013a2a4b7c10d6014d8bf7bccf3
-* https://input-output-hk.github.io/haskell.nix/reference/library/#callcabalprojecttonix
-
-Overriding a Nix installed package
-----------------------------------
+Customizing the distribution
+----------------------------
 
 If you want to use a custom version of a package instead of the one
 available from the nix channel.  Generate a nix expression that will be
@@ -402,13 +465,13 @@ Building haskell packages without doCheck::
       };
 
 Global Override
----------------
+~~~~~~~~~~~~~~~
 
 Add the above expression in `~/.config/nixpkgs/config.nix` to override
 package versions used in a package set.
 
 Using a source repository package
----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To use the git source of the streamly package and an external
 library dependency on `zlib`, in your `default.nix` file use
@@ -429,97 +492,52 @@ library dependency on `zlib`, in your `default.nix` file use
       (attrs: { buildInputs = attrs.buildInputs ++ buildInputs;})
 
 
-Cabal
------
-
-Run cabal commands using the nix shell environment defined in your
-``shell.nix`` file ::
-
-  cabal --enable-nix ...
-
-Stack
------
-
-Build with stack using your nix environment ::
-
-  stack --nix build
-
-Reference Material
-------------------
-
-Haskell Attributes
-~~~~~~~~~~~~~~~~~~
-
-::
-
-  nixpkgs.haskell
-  nixpkgs.haskell.compiler
-  nixpkgs.haskell.packages
-  nixpkgs.haskell.packages.ghc865
-  nixpkgs.haskell.packages.ghc883
-  ...
-  nixpkgs.haskellPackages
-
-Haskell mkDerivation
---------------------
-
-To dig into Haskell ``mkDerivation`` attributes, see::
-
-    ~/.nix-defexpr/channels/nixpkgs/pkgs/development/haskell-modules/generic-builder.nix
-
-Haskell build functions
------------------------
-
-::
-
-    haskellPackages.ghcWithPackages
-    haskellPackages.ghcWithHoogle
-
 Compiling and Linking
 ---------------------
 
-Environment Variables
-~~~~~~~~~~~~~~~~~~~~~
+If we have to use the headers and link against a C library, then we can
+specify the library in the ``executableSystemDepends`` attribute of the
+derivation.
 
-Nix shell sets these environment variables::
+If you want to link the library directly without using a nix derivation
+then first install it in your nix profile and then pass the
+appropriate linker flags to the tool chain. The library is installed
+in ``~/.nix-profile/lib``, and the header files are installed in
+``~.nix-profile/include``.
 
-  SHELL
-  PATH
-  NIX_LDFLAGS
-  NIX_LDFLAGS_FOR_TARGET
+Installing headers
+~~~~~~~~~~~~~~~~~~
 
-Compiling
-~~~~~~~~~
+To install the header files we may have to explicitly install the ``dev``
+output of the library package which may not be installed by default.
+``nix-env`` cannot select the output paths from a multi-output
+derivation. See
+https://github.com/NixOS/nixpkgs/pull/76794/commits/611258f063f9c1443a5f95db3fc1b6f36bbf4b52 
+for a workaround.
 
-Use ``C_INCLUDE_PATH=~/.nix-profile/include`` to find headers installed in the
-profile.
+One way to use the header files is to find the path location of the package in
+the nix store and use it directly from there.
 
-Static Linking
-~~~~~~~~~~~~~~
+Using headers and libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See the "Haskell getting started guide" to know how to
+use C libraries with cabal.  We can use the environment
+variable ``C_INCLUDE_PATH=~/.nix-profile/include`` to find
+headers installed in the profile.  Similarly, we can use
+``LD_LIBRARY_PATH=~/.nix-profile/lib`` to find the libraries
+to link. In a nix shell we can initialize this variable from
+``NIX_LDFLAGS_FOR_TARGET`` to find the shell provided libraries.
+
+Export statically linked programs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Exporting programs from nix store.
 
-Dynamic Linking
-~~~~~~~~~~~~~~~
+GHC Development with Nix
+------------------------
 
-Use ``LD_LIBRARY_PATH=~/.nix-profile/lib``. In a nix shell we can
-initialize this variable from ``NIX_LDFLAGS_FOR_TARGET`` to find the shell
-provided libraries.
-
-Recipe to Reproduce an environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Can we get a recipe to reproduce a particular shell later on? Including the
-nixpkgs/nix channel plus all dependencies?
-
-Compiling GHC
--------------
-
-override gmp to install header file.
-
-::
-
-  export C_INCLUDE_PATH=~/.nix-profile/include
+See https://github.com/alpmestan/ghc.nix/blob/master/default.nix .
 
 Diagnostics
 -----------
@@ -608,37 +626,10 @@ Q: Got a "framework not found" error when linking an executable::
 A: Add ``nixpkgs.pkgs.darwin.apple_sdk.frameworks.Cocoa`` to
   ``executableSystemDepends`` in mkDerivation.
 
-Unresolved Issues
------------------
-
-Q: When building streamly local package with ghc883, it fails with::
-
-  compileBuildDriverPhase
-  setupCompileFlags: -package-db=/private/var/folders/p4/fdt36vy95f52t_3dnpcx8_340000gn/T/nix-build-streamly-0.7.2.drv-0/setup-package.conf.d -j8 -threaded -rtsopts
-  Loaded package environment from /private/var/folders/p4/fdt36vy95f52t_3dnpcx8_340000gn/T/nix-build-streamly-0.7.2.drv-0/streamly/.ghc.environment.x86_64-darwin-8.8.3
-  [1 of 1] Compiling Main             ( Setup.hs, /private/var/folders/p4/fdt36vy95f52t_3dnpcx8_340000gn/T/nix-build-streamly-0.7.2.drv-0/Main.o )
-
-  Setup.hs:3:1: error:
-      Could not load module ‘Distribution.Simple’
-      It is a member of the hidden package ‘Cabal-3.0.1.0’.
-      You can run ‘:set -package Cabal’ to expose it.
-      (Note: this unloads all the modules in the current scope.)
-      Use -v (or `:set -v` in ghci) to see a list of the files searched for.
-    |
-  3 | import Distribution.Simple
-    | ^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-  builder for '/nix/store/n615rlmr0lkkdjh84ymgh3hcrcibyp5j-streamly-0.7.2.drv' failed with exit code 1
-
-A: Edited
-``nixpkgs/pkgs/development/haskell-modules/generic-builder.nix`` to add
-``-package Cabal`` flag when compiling but then it starts compiling the whole
-world including ghc.
-
 Quick References
 ----------------
 
-* `Nix getting started guide <getting-started-nix.rst>`_
+* `Nix getting started guide <user-guide.rst>`_
 * `Nix manual Haskell section <https://nixos.org/nixpkgs/manual/#haskell>`_
 * `cabal2nix: convert cabal file to nix expression <http://hackage.haskell.org/package/cabal2nix>`_
 * `hackage2nix: update Haskell packages in nixpkgs <https://github.com/NixOS/cabal2nix/tree/master/hackage2nix>`_
