@@ -475,6 +475,52 @@ Haskell build functions
     haskellPackages.ghcWithPackages
     haskellPackages.ghcWithHoogle
 
+Compiling and Linking
+---------------------
+
+Environment Variables
+~~~~~~~~~~~~~~~~~~~~~
+
+Nix shell sets these environment variables::
+
+  SHELL
+  PATH
+  NIX_LDFLAGS
+  NIX_LDFLAGS_FOR_TARGET
+
+Compiling
+~~~~~~~~~
+
+Use ``C_INCLUDE_PATH=~/.nix-profile/include`` to find headers installed in the
+profile.
+
+Static Linking
+~~~~~~~~~~~~~~
+
+Exporting programs from nix store.
+
+Dynamic Linking
+~~~~~~~~~~~~~~~
+
+Use ``LD_LIBRARY_PATH=~/.nix-profile/lib``. In a nix shell we can
+initialize this variable from ``NIX_LDFLAGS_FOR_TARGET`` to find the shell
+provided libraries.
+
+Recipe to Reproduce an environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Can we get a recipe to reproduce a particular shell later on? Including the
+nixpkgs/nix channel plus all dependencies?
+
+Compiling GHC
+-------------
+
+override gmp to install header file.
+
+::
+
+  export C_INCLUDE_PATH=~/.nix-profile/include
+
 Diagnostics
 -----------
 
@@ -522,6 +568,32 @@ Q: When compiling with ghc/gcc/clang I see an error like this::
 A: ``libz`` (``-lz`` in the error message) is provided by ``nixpkgs.pkgs.zlib``.
    Add ``nixpkgs.pkgs.zlib`` to ``executableSystemDepends`` in ``mkDerivation``.
 
+Q: On macOS, getting this error::
+
+    cbits/c_fsevents.m:1:10: error:
+         fatal error: 'CoreServices/CoreServices.h' file not found
+      |
+    1 | #include <CoreServices/CoreServices.h>
+      |          ^
+    #include <CoreServices/CoreServices.h>
+             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    1 error generated.
+    `cc' failed in phase `C Compiler'. (Exit code: 1)
+
+A: The ``CoreServices`` framework is missing::
+
+  $ nix-env -iA nixpkgs.pkgs.darwin.apple_sdk.frameworks.CoreServices
+  installing 'apple-framework-CoreServices'
+  building '/nix/store/04yl425g4lp3ld5xlzv04b7n8zbmzi3y-user-environment.drv'...
+  created 71 symlinks in user environment
+
+Q. How to install the dev version of a library to get the include headers? For
+example install gmp headers to compile ghc source?
+
+A. ``nix-env`` cannot select the output paths from a multi-output derivation. See
+https://github.com/NixOS/nixpkgs/pull/76794/commits/611258f063f9c1443a5f95db3fc1b6f36bbf4b52 
+for a workaround.
+
 Mac OS Specific
 ~~~~~~~~~~~~~~~
 
@@ -563,15 +635,6 @@ A: Edited
 ``-package Cabal`` flag when compiling but then it starts compiling the whole
 world including ghc.
 
-Compiling GHC
--------------
-
-override gmp to install header file.
-
-::
-
-  export C_INCLUDE_PATH=~/.nix-profile/include
-
 Quick References
 ----------------
 
@@ -588,3 +651,4 @@ Resources
 * https://stackoverflow.com/questions/57725045/disable-building-and-running-tests-for-all-haskell-dependencies-in-a-nix-build
 * https://github.com/direnv/direnv/wiki/Nix direnv
 * https://github.com/target/lorri/ lorri
+* `Nix based CI <https://github.com/mightybyte/zeus>`_

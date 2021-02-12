@@ -20,7 +20,7 @@ quickly from one environment to another, and use custom environments for
 different tasks.
 
 Requirements
-------------
+~~~~~~~~~~~~
 
 Nix may take a fair amount of disk space (e.g. 5 GB to begin with)
 as it installs a self contained package ecosystem with all the
@@ -38,7 +38,7 @@ expression language to use Nix effectively, its declarative and easy
 to learn, a small subset is enough to get going.
 
 Advantages
-----------
+~~~~~~~~~~
 
 Of course, you get a very powerful way to manage packages.  On Mac
 OS you can get rid of package managers like Homebrew, MacPorts for
@@ -48,7 +48,7 @@ store and use nix installed packages instead.  The disk space that nix
 takes can be compensated by these savings.
 
 Terminology
------------
+~~~~~~~~~~~
 
 +------------------------+----------------------------------------------------+
 | Nix                    | Package manager available on Unix (Linux/MacOS)    |
@@ -98,7 +98,7 @@ Quick install:
 * `Nix download page <https://nixos.org/nix/download.html>`_
 
 Post Install
-------------
+~~~~~~~~~~~~
 
 Nix provides a shell script to set up the shell ``PATH`` and a few other
 environment variables to access the nix commands.  Do not forget to run
@@ -114,8 +114,11 @@ working correctly::
     $ nix-env --version
     nix-env (Nix) 2.3.6
 
+Concepts
+--------
+
 Nix Store
----------
+~~~~~~~~~
 
 Nix knows about a collection of packages and how to build them from
 sources.  Packages may have other packages as dependencies. When
@@ -139,8 +142,8 @@ file system::
   dr-xr-xr-x    2 root     root          4096 Jan  1  1970 bin
   dr-xr-xr-x    3 root     root          4096 Jun 10 16:45 libexec
 
-Nix Profile Directories
------------------------
+Nix Profiles
+~~~~~~~~~~~~
 
 A nix profile is a self contained directory consisting of a particular
 set of installed programs and libraries. These programs are symlinks to the
@@ -167,7 +170,7 @@ multiple nix profile directories, they could be anywhere in your file
 system not necessarily in ``/nix``.
 
 User's view of the nix system
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``$HOME/.nix-profile`` is a symlink to one of the profile directories and is
 called the active profile::
@@ -186,7 +189,7 @@ Once this script is sourced (typically from the shell profile) you are all set
 to use nix installed packages.
 
 Useful Commands
----------------
+~~~~~~~~~~~~~~~
 
 On fresh install, the default nix profile would have only the ``nix``
 package installed which provides the nix package manager binaries. To
@@ -211,7 +214,7 @@ To know more details about any of the nix commands use `--help`::
   $ nix-channel --help
 
 Nix Packages and Nix Expressions
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Nix package manager installs nix packages and their dependencies
 and makes them available in a "user environment".  A nix package is
@@ -225,8 +228,11 @@ for all packages can be found in the `nix expression repository
 `See this reference manual <https://nixos.org/nixpkgs/manual/>`_ for
 defining nix packages using nix expressions.
 
+Nix Distribution
+----------------
+
 Nix Channels
-------------
+~~~~~~~~~~~~
 
 Nix packages are distributed through nix channels. Channels are specified in
 https://github.com/NixOS/nixpkgs-channels.  Branches in that repository
@@ -253,8 +259,8 @@ You can use any nix expression archive as a channel::
   $ nix-channel --add https://github.com/rycee/home-manager/archive/master.tar.gz home-manager
   $ nix-channel --update
 
-Upgrading
----------
+Upgrading Nix
+~~~~~~~~~~~~~
 
 nix-channel update sets up new packages to be installed from the new version.
 Note that it will install all the dependencies of the new packages as well
@@ -270,7 +276,7 @@ unless you upgrade the existing packages to use the new specification.
   $ nix-env --upgrade
 
 Using a stable version
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 TBD. How to use nixpkgs corresponding to a stable nixos version.
 
@@ -281,8 +287,8 @@ packages but use the newer version of nix::
   # Upgrade all packages to the same versions in newer release
   $ nix-env --upgrade --eq
 
-Distribution Details
---------------------
+Distribution Implementation Details
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * The source of packages is at: https://github.com/NixOS/nixpkgs-channels
 * Hydra CI system builds from a commit in the source repo and tests
@@ -299,7 +305,7 @@ Distribution Details
 * ``$HOME/.nix-channels`` points to https://nixos.org/channels/nixpkgs-unstable
 
 Using the Release
------------------
+~~~~~~~~~~~~~~~~~
 
 nix commands use a nix expression as input which is passed to
 the nix expression being evaluated. By default the input nix
@@ -330,8 +336,11 @@ environment, if anything in the environment can affect the derivation,
 the hash and therefore the path would be different and we would end up
 building the artifact again instead of reusing the pre-built one.
 
+Package Management
+------------------
+
 Nix User Environments
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 The directory ``/nix`` is a global store containing all packages, each
 one installed in its own directory named using a hash of the full
@@ -378,8 +387,8 @@ has one more package (ca certificates) installed.
 
 * https://nixos.org/nix/manual/#sec-profiles
 
-Nix Package Manager
--------------------
+nix-env The Package Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``nix-env`` is the nix command for package management. ``nix-env`` searches
 or installs packages from the default nix channel or the channels added using
@@ -413,7 +422,7 @@ You can also `search nix packages here
 <https://nixos.org/nixos/packages.html?channel=nixpkgs-unstable>`_.
 
 Packages by Attributes
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 Nix packages are grouped under an attribute hierarchy starting with
 ``nixpkgs`` at the top level.  ``nixpkgs`` refers to the nix expression in
@@ -448,7 +457,7 @@ Important Note: If you are inside a ``nix-shell --pure`` environment the
 ``nix-env`` command above may not show any packages.
 
 Installing packages
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 When installing a package nix would fetch/build all the dependencies
 that are not already available in the store. On the first invocation a
@@ -465,7 +474,7 @@ To install a Haskell package::
   $ nix-env -i -A nixpkgs.haskellPackages.streamly
 
 Profile Generations
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 Let's look at the nix profiles directory after installing ``ghc``::
 
@@ -505,7 +514,7 @@ TBD: how to know what is different between two generations? diff the
 directories?
 
 Using a different Nix "repository" path
----------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The nix package repository is defined by a nix expression.  The default
 nix expression used by nix commands is ``$HOME/.nix-defexpr``. The
@@ -535,7 +544,7 @@ Install a package from a Nix expression ::
   $ nix-env -f ~/foo.nix -i '.*' # install all derivations from foo.nix
 
 Working with Profiles
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 Which profile am I using currently? Check where the symlink
 ``~/.nix-profile`` is pointing::
@@ -602,6 +611,55 @@ profiles within the nix store profiles directory so that it can track?
 
 TBD: deleting profiles
 
+Upgrading Packages
+~~~~~~~~~~~~~~~~~~
+
+Upgrading one or more packages to newer version in the same release::
+
+  $ nix-env --upgrade ghc
+
+The upgrade is immutable, it will create a new user environment with the
+upgraded version and its dependencies. A newer generation of the profile is
+created.
+
+Upgrading all packages::
+
+  $ nix-env --upgrade
+
+Upgrading to a newer release::
+
+  $ nix-channel --update
+  $ nix-env --upgrade --eq
+
+The ``--eq`` instructs upgrade to upgrade to the same versions of packages in
+the newer release.
+
+Uninstalling packages
+~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+  $ nix-env --uninstall firefox
+  $ nix-collect-garbage
+  # To delete all old generations of profiles
+  $ nix-collect-garbage -d
+
+Garbage Collection
+~~~~~~~~~~~~~~~~~~
+
+nix is immutable package manager. When you install new versions of
+packages or upgrade the packages it does not remove the old ones instead
+new versions are installed independently and made available via a new
+generation of the user profile.  Therefore, the nix store can grow
+over time accumulating packages which are no longer required thus
+unnecessarily consuming disk space.
+
+``nix-collect-garbage`` deletes all the objects in the nix store
+which are not reachable from ``/nix/var/nix/gcroots``. The default
+profiles are already linked from ``gcroots``.  If you do not want your
+private profiles to be garbage collected create symlinks to those in
+``/nix/var/nix/gcroots``.
+
 Nix Shell
 ---------
 
@@ -658,91 +716,6 @@ The sandbox created by the shell is cached and is reused every time the
 same configuration is requested. Therefore, next time the shell starts
 quickly.  Note that the sha256 hash used in the location of the sandbox
 is hashed using the config of the sandbox.
-
-Upgrade
--------
-
-Upgrading one or more packages to newer version in the same release::
-
-  $ nix-env --upgrade ghc
-
-The upgrade is immutable, it will create a new user environment with the
-upgraded version and its dependencies. A newer generation of the profile is
-created.
-
-Upgrading all packages::
-
-  $ nix-env --upgrade
-
-Upgrading to a newer release::
-
-  $ nix-channel --update
-  $ nix-env --upgrade --eq
-
-The ``--eq`` instructs upgrade to upgrade to the same versions of packages in
-the newer release.
-
-Uninstalling packages
----------------------
-
-::
-
-  $ nix-env --uninstall firefox
-  $ nix-collect-garbage
-  # To delete all old generations of profiles
-  $ nix-collect-garbage -d
-
-Garbage Collection
-------------------
-
-nix is immutable package manager. When you install new versions of
-packages or upgrade the packages it does not remove the old ones instead
-new versions are installed independently and made available via a new
-generation of the user profile.  Therefore, the nix store can grow
-over time accumulating packages which are no longer required thus
-unnecessarily consuming disk space.
-
-``nix-collect-garbage`` deletes all the objects in the nix store
-which are not reachable from ``/nix/var/nix/gcroots``. The default
-profiles are already linked from ``gcroots``.  If you do not want your
-private profiles to be garbage collected create symlinks to those in
-``/nix/var/nix/gcroots``.
-
-Developing with Nix
--------------------
-
-Environment Variables
-~~~~~~~~~~~~~~~~~~~~~
-
-Nix shell sets these environment variables:
-
-SHELL
-PATH
-NIX_LDFLAGS
-NIX_LDFLAGS_FOR_TARGET
-
-Compiling
-~~~~~~~~~
-
-Use C_INCLUDE_PATH=~/.nix-profile/include to find headers installed in the
-profile. 
-
-Static Linking
-~~~~~~~~~~~~~~
-
-Exporting programs from nix store.
-
-Dynamic Linking
-~~~~~~~~~~~~~~~
-
-Use LD_LIBRARY_PATH=~/.nix-profile/lib. In a nix shell we can initialize this
-variable from NIX_LDFLAGS_FOR_TARGET to find the shell provided libraries.
-
-Recipe to Reproduce an environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Can we get a recipe to reproduce a particular shell later on? Including the
-nixpkgs/nix channel plus all dependencies?
 
 Uninstall Nix
 -------------
@@ -882,38 +855,12 @@ A: You may run into such errors if you are installing many different
      building '/nix/store/5jcny4113np1il4yf56kra6iyg6h9aj2-user-environment.drv'...
      created 342 symlinks in user environment
 
-Q: On macOS, getting this error::
-
-    cbits/c_fsevents.m:1:10: error:
-         fatal error: 'CoreServices/CoreServices.h' file not found
-      |
-    1 | #include <CoreServices/CoreServices.h>
-      |          ^
-    #include <CoreServices/CoreServices.h>
-             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    1 error generated.
-    `cc' failed in phase `C Compiler'. (Exit code: 1)
-
-A: The ``CoreServices`` framework is missing::
-
-  $ nix-env -iA nixpkgs.pkgs.darwin.apple_sdk.frameworks.CoreServices
-  installing 'apple-framework-CoreServices'
-  building '/nix/store/04yl425g4lp3ld5xlzv04b7n8zbmzi3y-user-environment.drv'...
-  created 71 symlinks in user environment
-
-Q. How to install the dev version of a library to get the include headers? For
-example install gmp headers to compile ghc source?
-
-A. ``nix-env`` cannot select the output paths from a multi-output derivation. See
-https://github.com/NixOS/nixpkgs/pull/76794/commits/611258f063f9c1443a5f95db3fc1b6f36bbf4b52 
-for a workaround.
-
 Further Reading
 ---------------
 
-* `Nix package building guide: <getting-started-nix-pkgs.rst>`_.
-* `Nix Haskell guide: <getting-started-nix-haskell.rst>`_.
-* `Nix Reference <getting-started-nix-reference.rst>`_.
+* `Nix Package Derivation Guide <package-derivation.rst>`_
+* `Nix Haskell Development Guide <haskell-development.rst>`_
+* `Nix Reference <reference.rst>`_
 
 Quick References
 ----------------
@@ -923,6 +870,21 @@ Install
 
 * `Nix package manager install script <https://nixos.org/nix/install>`_
 * `Nix package manager download <https://nixos.org/nix/download.html>`_
+* http://sandervanderburg.blogspot.com/2013/06/setting-up-multi-user-nix-installation.html
+
+Search, Install Packages
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* `Search nixos/nix packages <https://nixos.org/nixos/packages.html>`_
+* https://lazamar.co.uk/nix-versions/
+* https://lazamar.github.io/download-specific-package-version-with-nix/
+
+Distribution Repositories
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* `Nix package expression repository <https://github.com/NixOS/nixpkgs>`_
+* `Nix package distribution channels <https://github.com/NixOS/nixpkgs-channels>`_
+* `NixOS prebuilt binary cache <https://cache.nixos.org>`_
 
 Learning
 ~~~~~~~~
@@ -939,25 +901,5 @@ Reference Docs
   * `Nix profiles <https://nixos.org/nix/manual/#chap-writing-nix-expressions>`_
 
 * `Nix package manager home page <https://nixos.org/nix/>`_
+* `NixOS home page <https://nixos.org/>`_
 * `Nix Cookbook <https://nix.dev/>`_
-
-Search, Install Packages
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-* `Search nixos/nix packages <https://nixos.org/nixos/packages.html>`_
-* https://lazamar.co.uk/nix-versions/
-* https://lazamar.github.io/download-specific-package-version-with-nix/
-
-Repositories
-~~~~~~~~~~~~
-
-* `Nix package expression repository <https://github.com/NixOS/nixpkgs>`_
-* `Nix package distribution channels <https://github.com/NixOS/nixpkgs-channels>`_
-* `NixOS prebuilt binary cache <https://cache.nixos.org>`_
-
-Others
-~~~~~~
-
-* `NixOS <https://nixos.org/>`_
-* `Nix based CI <https://github.com/mightybyte/zeus>`_
-* http://sandervanderburg.blogspot.com/2013/06/setting-up-multi-user-nix-installation.html
