@@ -131,8 +131,19 @@ Since nix shell already installed all the dependencies and registers them
 with ``ghc``, ``cabal build`` does not build any dependencies, it just
 builds the current package using the pre-installed dependencies.
 
-If you want to add additional packages, you need to exit the shell, add the new
-package to ``shell.nix``, and restart the shell.
+If you want to add additional packages, you need to exit the shell, add
+the new package to ``shell.nix``, and restart the shell. For example, to
+add dependencies for cabal executables::
+
+        executableHaskellDepends = [
+          cabal-doctest
+        ];
+        executableFrameworkDepends = [
+          nixpkgs.darwin.apple_sdk.frameworks.Cocoa
+        ];
+        executableSystemDepends = [
+          nixpkgs.pkgs.zlib
+        ];
 
 Environment variables inherited from the current shell can still influence the
 build in the nix shell. To make sure that the environment is cleared in the nix
