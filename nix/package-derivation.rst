@@ -710,6 +710,26 @@ the gmp.h header file installed in ~/.nix-profile/include ::
     };
   }
 
+Finding sha256
+--------------
+
+::
+
+  $ nix-prefetch-url http://hackage.haskell.org/package/beam-core-0.9.0.0/beam-core-0.9.0.0.tar.gz
+  path is '/nix/store/w5ipisq7bq6zmjjfmjzvws62wkwnp7hs-beam-core-0.9.0.0.tar.gz'
+  0ixaxjmgg162ff7srvwmkv5lp1kfb0b6wmrpaz97rsmlpa5vf6ji
+
+Specify the sha256 given above. Then evaluate the expression.::
+
+  $ nix-shell
+  building '/nix/store/gcp4vxffxfadb5sx1j5cfcws52m1nc1z-source.drv'...
+
+  hash mismatch in fixed-output derivation '/nix/store/a6i38xchxpdp1y1mg700j9ijg3cb5101-source':
+    wanted: sha256:0ixaxjmgg162ff7srvwmkv5lp1kfb0b6wmrpaz97rsmlpa5vf6ji
+    got:    sha256:0d79ca1rxnq2hg1ap7mx3l3qg3hwfaby4g3cckk4y3ml86asw6jh
+
+If the sha256 mismatches use the hash in the "got" field above.
+
 Working with Nix Store
 ----------------------
 
