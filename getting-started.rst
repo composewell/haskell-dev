@@ -1,5 +1,5 @@
-Getting Started with Haskell
-============================
+Getting Started with GHC & cabal
+================================
 
 The purpose of this guide is to document best practices for new users to
 get started on using the Haskell compiler ``ghc`` and Haskell build tool
