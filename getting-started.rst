@@ -39,12 +39,6 @@ is in your `PATH`. Make sure you have followed the installation
 instructions carefully, especially the part where it asks you to setup
 the `PATH` for you.
 
-Editors
--------
-
-``vim``, ``emacs`` and ``vscode`` are popular editors having reasonable
-support for the Haskell tool chain.
-
 Hello World!
 ------------
 
