@@ -1003,8 +1003,8 @@ You can resolve these errors by:
   in the cabal file of the package, to find the right compiler version
   to use. Try an appropriate version of ``ghc``.
 
-Bugs
-~~~~
+Bugs & Quirks
+~~~~~~~~~~~~~
 
 Q: ``ghc-pkg list`` does not show all the packages that cabal can use.
 
@@ -1027,6 +1027,15 @@ first line::
           | ^
 
 A: This is a bug in cabal, use "3.0" instead of "3" in version.
+
+Q. I specified a flag using "--flag" and it is not working
+
+A: Spelling mistakes in flags are silently ignored. Be sure to specify the
+correct flag.
+
+Q. Can I always specify a comment in cabal file using "--"
+
+A. No, only at the beginning of a line.
 
 Q: Can ``cabal`` report better errors?
 
