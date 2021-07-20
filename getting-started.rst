@@ -1078,3 +1078,7 @@ Packages:
 * `ghc-prim: Primitives provided by GHC <http://hackage.haskell.org/package/ghc-prim>`_
 * `GHC boot packages <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries>`_.
 * `GHC version to GHC boot package version mapping <https://gitlab.haskell.org/ghc/ghc/-/wikis/commentary/libraries/version-history>`_
+
+Resources:
+
+* `A curated list of awesome resources for the Haskell Cabal build tool. <https://kowainik.github.io/projects/awesome-cabal>`_
