@@ -1,18 +1,41 @@
 ## GHC Package Management
 
-When running `ghc` or `ghci` from command line you can only `import`
-Haskell packages that ghc knows about. Haskell Packages must be
-installed by a build tool, e.g. `cabal`, before ghc can use them.
+When running `ghc` or `ghci` from command line you can `import` only
+those Haskell packages that ghc knows about.
+
+## Package Databases
+
+Haskell Packages live in package databases. GHC has a default global
+package database installed with the compiler, this package database is
+always used unless you specify `-no-global-package-db` option.
+
+New package databases can be created by users directly using the
+`ghc-pkg` tool or by using build tools like `cabal`. A package database
+is a file that tells the compiler about packages, modules exposed by
+a particular package, where to find interface files (.hi) for each
+exposed module, where to find the library file to link corresponding to
+a library package. A package database is a local repository of packages
+independent of ghc installation. We can use any number of independent
+package databases when compiling a Haskell source.  When compiling,
+users can specify the package databases to be used via command line
+flags.
+
+`ghc-pkg` is the utility shipped with `ghc` to create and manipulate package
+databases. Usually they are created by build tools.
+
+Packages can either be added to the default package database installed
+with ghc, or using a more modular approach they can added to user package
+databases instead.
 
 For quick resolution of any package related issues, when using `ghc`
-directly, you can use `ghc -v` to see how and from where GHC is loading
+directly, use `ghc -v` to see how and from where GHC is loading
 its packages. Read the following paragraphs for a detailed explanation
 of package management in GHC to better understand how it works.
 
-### Package Databases
+### Default Package Databases
 
-GHC can pick up packages from a `stack of package
-databases`. By default there are two databases known to GHC:
+GHC can pick up packages from a `stack of package databases`. There are
+two default package database locations known to GHC:
 
 * a `global` database at `<ghc-install-dir>/lib/ghc-<version>/package.conf.d/`
 * a `user` database at `$HOME/.ghc/arch-os-version/package.conf.d` or on
@@ -23,9 +46,6 @@ options can be used to specify a custom stack of package databases. In
 addition, environment files can also be used to specify package
 databases.
 
-`ghc-pkg` is the utility shipped with `ghc` to create and manipulate package
-databases. Usually they are created by build tools.
-
 ### What's there in a package database?
 
 A package database directory e.g.
@@ -33,6 +53,39 @@ A package database directory e.g.
 number of `<package>.conf` files or package description file, one for
 each installed package.  A `.conf` file describes the package name,
 version etc. and where its binaries and interface files are installed.
+
+```
+name: streamly-core
+version: 0.4.0
+
+-- unit-id of the package, unique to each package. Usually suffixed with a hash
+-- of the interface files to keep it truly unique. For temporary packages can
+-- use "-temporary" or "-inplace" as used by cabal.
+id: streamly-core-0.4.0-<hash>
+
+exposed: True
+exposed-modules:
+  Streamly.Data.Stream
+  Streamly.Data.Fold
+  ... (others)
+depends:
+  base
+  containers
+  ...
+
+-- REQUIRED FOR BUILDING OTHER PACKAGES AGAINST IT:
+-- Contains .hi files for each module in a dir hierachy reflecting the module
+-- name hierarchy. For example,
+-- /home/user/streamly-core/build/Streamly/Data/Stream.hi . This is similar
+-- to the include dir and include files in C.
+import-dirs: /home/user/streamly-core/build
+
+-- REQUIRED FOR LINKING:
+-- For example, static linking will use the library file
+-- /home/user/streamly-core/libHSstreamy-core.a
+library-dirs: /home/user/streamly-core
+hs-libraries: HSstreamly-core
+```
 
 For example,
 `<ghc-install-dir>/lib/ghc-<version>/package.conf.d/base-<version>.conf`
@@ -277,6 +330,42 @@ version is strictly determined by the ghc version e.g. `ghc-prim`,
 `ghc` package then it automatically constrains that the versions of
 boot packages used by the user package are the same as used by that GHC
 version.
+
+### Manually building (without cabal)
+
+Suppose we have two package e.g. streamly-core and another package
+streamly-benchmarks which depends on streamly-core - how to build these
+manually?
+
+Make a local package-db, we do not want to modify the global db e.g. in
+case of Nix it may even be immutable.
+
+```
+mkdir mydb
+ghc-pkg init mydb
+```
+
+Build streamly-core library manually, it will generate the .hi files in the
+build directory.
+```
+ghc -isrc -odir build -hidir build -c src/**/*.hs
+```
+
+Create the library for linking:
+```
+ar rcs libHSstreamly-core.a build/*.o
+```
+
+Register the library in `mydb`:
+```
+ghc-pkg --package-db=mydb register streamly-core.conf
+```
+
+Use `mydb` to build a program or package depending on it e.g.
+`streamly-benchmarks`:
+```
+ghc -package-db mydb -package streamly-core -o bench bench/Main.hs
+```
 
 ### References
 
