@@ -277,10 +277,12 @@ Variable Naming
 * Use shorter variable names for shorter scopes, and longer variable names for
   bigger scopes.
 * In general, avoid using a prime on the variable names, e.g. use `step1`
-  instead of `step'`. Numbered indexing is better because it is easier
-  on the eyes especially when there are many of them sprinkled around
-  and we can represent multiple generations of the variables without
-  adding more characters e.g. we can write `step2` instead of `step''`.
+  instead of `step'`. Reasons:
+  * Numbered indexing is easier on the eyes especially when there are
+    many of them sprinkled around
+  * We can represent multiple generations of the variables without
+    adding more characters e.g. we can write `step2` instead of `step''`.
+  * single quotes do not work well with CPP (C pre-processor)
 
 Top Level Declarations
 ----------------------
